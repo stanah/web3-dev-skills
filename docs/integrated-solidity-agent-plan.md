@@ -1,742 +1,868 @@
-# 🚀 Solidityスマートコントラクト開発用ルールベースエージェントシステム
+# 🚀 Solidityスマートコントラクト開発用エージェントルールファイル整備計画
 
 ## エグゼクティブサマリー
 
-本計画書は、ルールファイル（`.cursorrules`）を活用した特化エージェントと、それを補助するCLIツールによって、セキュアで効率的なSolidityスマートコントラクト開発を実現するための実装計画です。
+本計画書は、Solidityスマートコントラクト開発に特化したAIエージェントルールファイルの整備計画です。各開発フェーズ（設計、実装、セキュリティ、テスト、最適化）に特化したルールファイルを作成し、Cursor、Claude Code、Amazon Q Developer CLI、GitHub Copilotなど、各AIツールの特性に合わせて適用します。
 
-**核心価値**: ルールファイルによる専門性の分離と、CLIツールによる品質保証の自動化
-
----
-
-## 第1部: クイックスタートガイド 🎯
-
-### 1.1 最小構成で今すぐ始める
-
-```bash
-# Step 1: プロジェクト初期化
-mkdir solidity-agent && cd solidity-agent
-npm init -y
-
-# Step 2: 基本ツールのインストール
-npm install --save-dev @openzeppelin/contracts@5.0.0
-curl -L https://foundry.paradigm.xyz | bash
-foundryup
-
-# Step 3: ルールファイルとCLIツールの配置
-mkdir -p .cursorrules docs/agents tools
-```
-
-### 1.2 必須ファイル（最小構成）
-
-#### `.cursorrules` (全体共通ルール)
-```markdown
-You are a world-class Solidity developer and security auditor.
-- Solidity ≥ 0.8.20, OpenZeppelin 5.0+
-- ALWAYS: CEI pattern, ReentrancyGuard, Access Control
-- ALWAYS: NatSpec, Events for state changes, Custom errors
-- Prefer: external over public, calldata over memory
-- Run: slither . && forge test
-```
-
-#### `tools/solidity-cli.sh` (統合CLIツール)
-```bash
-#!/bin/bash
-# Solidity開発補助CLIツール
-
-case "$1" in
-  check)
-    echo "=== Compiling ==="
-    forge build
-    echo "=== Security Analysis ==="
-    slither . --print human-summary
-    echo "=== Tests ==="
-    forge test --gas-report
-    ;;
-  lint)
-    solhint 'contracts/**/*.sol'
-    ;;
-  coverage)
-    forge coverage
-    ;;
-  *)
-    echo "Usage: $0 {check|lint|coverage}"
-    exit 1
-    ;;
-esac
-```
+**核心価値**: 専門性の高いルールファイルによる開発品質の向上とセキュリティ保証
 
 ---
 
-## 第2部: ルールベース特化エージェント設計 📝
+## 第1部: Solidityルールファイル設計（主眼） 📋
 
-### 2.1 5つの特化エージェント
+### 1.1 ルールファイル体系
 
-| エージェント | 専門領域 | ルールファイル | 使用場面 |
-|------------|---------|------------|---------|
-| **設計エージェント** | 要件分析、アーキテクチャ | `.cursorrules.design` | 新規開発の初期段階 |
-| **開発エージェント** | コード生成、実装 | `.cursorrules.dev` | 実装フェーズ |
-| **セキュリティエージェント** | 脆弱性検出、修正 | `.cursorrules.security` | コードレビュー |
-| **テストエージェント** | テストコード生成 | `.cursorrules.test` | テスト作成 |
-| **最適化エージェント** | ガス最適化 | `.cursorrules.optimize` | 最終調整 |
+5つの専門特化ルールファイルと、その組み合わせによる開発支援：
 
-### 2.2 エージェント切り替え方法
+| ルールファイル | 専門領域 | 主な役割 | 適用フェーズ |
+|-------------|---------|---------|------------|
+| **design-rules** | アーキテクチャ設計 | 要件分析、ガス設計、インターフェース定義 | 開発初期 |
+| **dev-rules** | 実装 | Solidityコード生成、OpenZeppelin活用 | コーディング |
+| **security-rules** | セキュリティ | 脆弱性検出、CEIパターン、アクセス制御 | レビュー |
+| **test-rules** | テスト | Foundryテスト、Fuzz、インバリアント | 品質保証 |
+| **optimize-rules** | 最適化 | ガス最適化、ストレージ効率化 | 最終調整 |
 
-```bash
-# エージェント切り替えスクリプト
-#!/bin/bash
-# tools/switch-agent.sh
+### 1.2 共通基盤ルール（base-rules）
 
-agent=$1
-if [ -f ".cursorrules.$agent" ]; then
-  cp ".cursorrules.$agent" .cursorrules
-  echo "✅ Switched to $agent agent"
-else
-  echo "❌ Agent $agent not found"
-fi
-```
-
-使用例:
-```bash
-./tools/switch-agent.sh security  # セキュリティエージェントに切り替え
-./tools/switch-agent.sh dev      # 開発エージェントに切り替え
-```
-
----
-
-## 第3部: 詳細ルールファイル設計 📋
-
-### 3.1 設計エージェント（`.cursorrules.design`）
+すべてのエージェントが従うべき基本原則：
 
 ```markdown
-# Solidity Design Agent
+# Solidity Development Base Rules
 
-You are a Solidity architect specializing in contract design.
+## Core Principles
+You are a world-class Solidity developer with deep security expertise.
+Every line of code you write must consider:
+1. Security implications (reentrancy, access control, overflow)
+2. Gas efficiency (storage patterns, computation optimization)
+3. Maintainability (clear naming, comprehensive documentation)
+4. Standards compliance (ERC standards, OpenZeppelin patterns)
 
-## Primary Focus
-- Requirements analysis and translation to technical specs
-- Gas-efficient storage layout design
-- Inheritance structure and interface definition
-- Upgrade patterns (UUPS, Transparent Proxy)
+## Technical Requirements
+- Solidity Version: ^0.8.20 or higher
+- OpenZeppelin Contracts: 5.0.0 or higher
+- Development Framework: Foundry preferred, Hardhat supported
+- Testing: Minimum 90% coverage required
+
+## Security Non-Negotiables
+- ALWAYS apply Checks-Effects-Interactions pattern
+- ALWAYS use ReentrancyGuard for external calls
+- ALWAYS implement proper access control (Ownable/AccessControl)
+- ALWAYS validate inputs and handle edge cases
+- ALWAYS emit events for state changes
+- NEVER use tx.origin for authentication
+- NEVER trust external contracts blindly
+
+## Code Quality Standards
+- NatSpec documentation for ALL public/external functions
+- Custom errors instead of require strings (gas optimization)
+- Explicit visibility modifiers on all functions and variables
+- Consistent naming conventions (camelCase for functions, UPPER_CASE for constants)
+```
+
+### 1.3 設計特化ルール（design-rules）
+
+```markdown
+# Solidity Design Specialist Rules
+
+## Primary Expertise
+You excel at translating business requirements into secure, efficient smart contract architectures.
+Your designs prioritize:
+- Security by design (threat modeling from the start)
+- Gas efficiency through optimal storage layout
+- Upgradability considerations (proxy patterns when needed)
+- Modularity and composability
 
 ## Design Process
-1. Analyze requirements for security implications
-2. Define clear contract boundaries and responsibilities
-3. Plan storage layout for minimal gas usage
-4. Design event structure for complete observability
-5. Create comprehensive interface definitions
 
-## Output Format
-Always provide:
-- Contract structure diagram (text-based)
-- Storage layout specification
-- Interface definitions with NatSpec
-- Security considerations list
-- Gas optimization opportunities
+### 1. Requirements Analysis
+- Identify core business logic and constraints
+- Map out user roles and permissions
+- Define critical state variables and their relationships
+- Determine external dependencies (oracles, other contracts)
 
-## Standards
-- ERC compliance when applicable
-- OpenZeppelin base contracts preferred
-- Minimal external dependencies
-- Modular, composable design
+### 2. Security Architecture
+- Threat modeling using STRIDE methodology
+- Access control matrix definition
+- Emergency pause mechanisms design
+- Upgrade strategy (if applicable)
+
+### 3. Storage Layout Optimization
+```solidity
+// Example: Optimal storage packing
+contract OptimalStorage {
+    // Pack structs to minimize storage slots
+    struct User {
+        uint128 balance;      // Slot 1 (16 bytes)
+        uint64 lastUpdate;    // Slot 1 (8 bytes)
+        uint64 nonce;         // Slot 1 (8 bytes)
+        address wallet;       // Slot 2 (20 bytes)
+        bool isActive;        // Slot 2 (1 byte)
+        // 11 bytes padding in Slot 2
+    }
+
+    // Group frequently accessed variables
+    mapping(address => User) public users;
+    uint256 public totalSupply;  // Separate slot for hot variable
+}
 ```
 
-### 3.2 開発エージェント（`.cursorrules.dev`）
+### 4. Interface Design
+- Clear function signatures with descriptive names
+- Event definitions for all state changes
+- Error definitions with meaningful messages
+- Return value specifications
+
+## Output Deliverables
+1. **Architecture Diagram** (text-based)
+2. **Storage Layout Specification**
+3. **Interface Definitions** with NatSpec
+4. **Security Considerations Document**
+5. **Gas Estimation Report**
+6. **Dependency Map**
+
+## Design Patterns Library
+- Factory Pattern: For deploying multiple similar contracts
+- Proxy Pattern: UUPS or Transparent for upgradability
+- Diamond Pattern: For complex modular systems
+- Registry Pattern: For managing contract addresses
+- Pull Payment Pattern: For secure fund distribution
+```
+
+### 1.4 開発特化ルール（dev-rules）
 
 ```markdown
-# Solidity Development Agent
+# Solidity Implementation Specialist Rules
 
-You are implementing Solidity smart contracts with security-first approach.
+## Code Generation Standards
 
-## Code Generation Rules
-- Solidity ^0.8.20 with explicit version
-- Import OpenZeppelin 5.0+ contracts when applicable
-- Custom errors over require strings (gas optimization)
-- NatSpec for ALL public/external functions
-
-## Security Patterns (Mandatory)
-- Checks-Effects-Interactions for state changes
-- ReentrancyGuard for external calls
-- Access control (Ownable/AccessControl)
-- SafeERC20 for token interactions
-- Explicit visibility modifiers
-
-## Code Structure
-pragma solidity ^0.8.20;
+### Import Organization
+```solidity
+// 1. License and pragma
 // SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
 
-// Imports (OpenZeppelin first, then custom)
-// Interfaces
-// Libraries
-// Main contract with clear section comments:
-//   - State variables
-//   - Events
-//   - Errors
-//   - Modifiers
-//   - Constructor
-//   - External functions
-//   - Public functions
-//   - Internal functions
-//   - Private functions
+// 2. OpenZeppelin imports (alphabetical)
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-## Gas Optimization
-- Pack struct members
-- Use calldata for read-only arrays
-- Cache storage reads in memory
-- Prefer mappings over arrays for lookups
+// 3. Interface imports
+import "./interfaces/IMyContract.sol";
+
+// 4. Library imports
+import "./libraries/MyLibrary.sol";
+
+// 5. Parent contract imports
+import "./base/BaseContract.sol";
 ```
 
-### 3.3 セキュリティエージェント（`.cursorrules.security`）
+### Contract Structure Template
+```solidity
+contract MyContract is Ownable, ReentrancyGuard {
+    // ============ Libraries ============
+    using SafeERC20 for IERC20;
 
-```markdown
-# Solidity Security Agent
+    // ============ State Variables ============
+    // Constants
+    uint256 public constant MAX_SUPPLY = 1000000e18;
 
-You are a security auditor identifying and fixing vulnerabilities.
+    // Immutable
+    address public immutable treasury;
 
-## Critical Checks (Block deployment if found)
-- [ ] Reentrancy vulnerabilities
-- [ ] Unprotected external calls
-- [ ] Missing access controls
-- [ ] Integer overflow/underflow risks
-- [ ] Unchecked return values
+    // Public storage
+    mapping(address => uint256) public balances;
 
-## Analysis Approach
-1. Review every external/public function
-2. Trace all state changes
-3. Identify all external calls
-4. Check all mathematical operations
-5. Verify access control on sensitive functions
+    // Private storage
+    uint256 private _totalSupply;
 
-## Fix Templates
-For reentrancy:
-  Add: modifier nonReentrant from ReentrancyGuard
-  Apply: CEI pattern strictly
+    // ============ Events ============
+    event Deposit(address indexed user, uint256 amount);
+    event Withdrawal(address indexed user, uint256 amount);
 
-For access control:
-  Add: modifier onlyOwner or role-based
-  Document: Who should call this and why
+    // ============ Errors ============
+    error InsufficientBalance(uint256 requested, uint256 available);
+    error ZeroAddress();
+    error AmountTooLarge(uint256 amount, uint256 max);
 
-For external calls:
-  Check: Return values
-  Limit: Gas forwarded
+    // ============ Modifiers ============
+    modifier nonZeroAddress(address account) {
+        if (account == address(0)) revert ZeroAddress();
+        _;
+    }
 
-## Output Format
-- Severity: Critical/High/Medium/Low
-- Location: Contract:Function:Line
-- Issue: Clear description
-- Impact: What could go wrong
-- Fix: Exact code to implement
+    // ============ Constructor ============
+    constructor(address _treasury) {
+        if (_treasury == address(0)) revert ZeroAddress();
+        treasury = _treasury;
+    }
+
+    // ============ External Functions ============
+    function deposit(uint256 amount) external nonReentrant {
+        // Implementation following CEI pattern
+    }
+
+    // ============ Public Functions ============
+
+    // ============ Internal Functions ============
+
+    // ============ Private Functions ============
+
+    // ============ View Functions ============
+}
 ```
 
-### 3.4 テストエージェント（`.cursorrules.test`）
+## Security Implementation Patterns
+
+### Checks-Effects-Interactions Pattern
+```solidity
+function withdraw(uint256 amount) external nonReentrant {
+    // 1. Checks
+    if (amount == 0) revert ZeroAmount();
+    if (balances[msg.sender] < amount) {
+        revert InsufficientBalance(amount, balances[msg.sender]);
+    }
+
+    // 2. Effects
+    balances[msg.sender] -= amount;
+    totalSupply -= amount;
+
+    // 3. Interactions
+    (bool success, ) = msg.sender.call{value: amount}("");
+    if (!success) revert TransferFailed();
+
+    emit Withdrawal(msg.sender, amount);
+}
+```
+
+### Safe External Calls
+```solidity
+// For ERC20 tokens
+IERC20(token).safeTransfer(recipient, amount);
+
+// For arbitrary calls with return value checking
+(bool success, bytes memory data) = target.call{value: msg.value}(payload);
+if (!success) {
+    if (data.length > 0) {
+        assembly {
+            revert(add(32, data), mload(data))
+        }
+    } else {
+        revert CallFailed();
+    }
+}
+```
+
+## Gas Optimization Techniques
+- Use `calldata` for read-only function parameters
+- Cache storage variables in memory when accessed multiple times
+- Use `unchecked` blocks for safe arithmetic operations
+- Pack struct members efficiently
+- Use events instead of storage for data not needed on-chain
+- Prefer `external` over `public` for external-only functions
+```
+
+### 1.5 セキュリティ特化ルール（security-rules）
 
 ```markdown
-# Solidity Test Agent
+# Solidity Security Auditor Rules
 
-You are creating comprehensive test suites using Foundry.
+## Security Analysis Framework
+
+### Critical Vulnerability Checklist
+- [ ] Reentrancy attacks (all variants)
+- [ ] Integer overflow/underflow
+- [ ] Access control vulnerabilities
+- [ ] Front-running vulnerabilities
+- [ ] Time manipulation risks
+- [ ] Denial of Service vectors
+- [ ] Gas griefing opportunities
+- [ ] Oracle manipulation risks
+- [ ] Flash loan attack vectors
+- [ ] Signature replay attacks
+
+### Analysis Methodology
+
+1. **Entry Point Analysis**
+   - Map all external/public functions
+   - Identify state-changing operations
+   - Track fund flows
+
+2. **State Transition Analysis**
+   - Document all state changes
+   - Verify state consistency
+   - Check for race conditions
+
+3. **Dependency Analysis**
+   - External contract calls
+   - Oracle dependencies
+   - Library functions
+
+### Security Patterns and Fixes
+
+#### Reentrancy Prevention
+```solidity
+// Pattern 1: ReentrancyGuard
+modifier nonReentrant() {
+    require(!locked, "Reentrant call");
+    locked = true;
+    _;
+    locked = false;
+}
+
+// Pattern 2: Checks-Effects-Interactions
+// Always update state before external calls
+
+// Pattern 3: Pull over Push
+// Let users withdraw rather than sending
+```
+
+#### Access Control Implementation
+```solidity
+// Role-based access control
+bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
+bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
+
+function mint(address to, uint256 amount)
+    external
+    onlyRole(MINTER_ROLE)
+{
+    _mint(to, amount);
+}
+```
+
+#### Input Validation
+```solidity
+function transfer(address to, uint256 amount) external {
+    // Comprehensive input validation
+    require(to != address(0), "Invalid recipient");
+    require(to != address(this), "Cannot transfer to self");
+    require(amount > 0, "Amount must be positive");
+    require(amount <= balanceOf(msg.sender), "Insufficient balance");
+
+    // Safe transfer logic
+}
+```
+
+## Automated Security Tools Integration
+
+### Static Analysis with Slither
+Key detectors to focus on:
+- reentrancy-eth, reentrancy-no-eth
+- unchecked-transfer
+- incorrect-equality
+- uninitialized-state
+- locked-ether
+
+### Formal Verification Considerations
+- Define invariants for critical properties
+- Write properties for fuzzing
+- Specify pre/post conditions
+
+## Security Report Format
+1. **Executive Summary**
+2. **Severity Classification** (Critical/High/Medium/Low/Info)
+3. **Detailed Findings** with code locations
+4. **Proof of Concept** (if applicable)
+5. **Recommended Fixes** with code examples
+6. **Gas Impact** of security measures
+```
+
+### 1.6 テスト特化ルール（test-rules）
+
+```markdown
+# Solidity Testing Specialist Rules
+
+## Testing Philosophy
+Every line of code must be tested. Every edge case must be considered.
+Tests are documentation. Tests are the safety net.
+
+## Foundry Testing Standards
+
+### Test File Organization
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+import "forge-std/Test.sol";
+import "../src/MyContract.sol";
+
+contract MyContractTest is Test {
+    // ============ Test Storage ============
+    MyContract public myContract;
+    address public owner = address(0x1);
+    address public user = address(0x2);
+    address public attacker = address(0x3);
+
+    // ============ Setup ============
+    function setUp() public {
+        vm.startPrank(owner);
+        myContract = new MyContract();
+        vm.stopPrank();
+
+        // Fund test accounts
+        vm.deal(user, 100 ether);
+        vm.deal(attacker, 100 ether);
+    }
+
+    // ============ Unit Tests ============
+    function test_ConstructorSetsOwner() public {
+        assertEq(myContract.owner(), owner);
+    }
+
+    function test_RevertWhen_CallerNotOwner() public {
+        vm.prank(user);
+        vm.expectRevert("Ownable: caller is not the owner");
+        myContract.onlyOwnerFunction();
+    }
+
+    // ============ Fuzz Tests ============
+    function testFuzz_Deposit(uint256 amount) public {
+        vm.assume(amount > 0 && amount <= 100 ether);
+        vm.prank(user);
+        myContract.deposit{value: amount}();
+        assertEq(myContract.balanceOf(user), amount);
+    }
+
+    // ============ Invariant Tests ============
+    function invariant_TotalSupplyEqualsSum() public {
+        // Total supply always equals sum of all balances
+    }
+
+    // ============ Integration Tests ============
+    function test_Integration_FullUserFlow() public {
+        // Complete user journey test
+    }
+
+    // ============ Security Tests ============
+    function test_Security_ReentrancyAttack() public {
+        // Deploy attacker contract
+        // Attempt reentrancy
+        // Assert attack failed
+    }
+}
+```
+
+### Testing Patterns
+
+#### State Transition Tests
+```solidity
+function test_StateTransition_Deposit() public {
+    uint256 initialBalance = myContract.balanceOf(user);
+    uint256 depositAmount = 1 ether;
+
+    vm.prank(user);
+    myContract.deposit{value: depositAmount}();
+
+    // Verify all state changes
+    assertEq(myContract.balanceOf(user), initialBalance + depositAmount);
+    assertEq(myContract.totalSupply(), depositAmount);
+    assertEq(address(myContract).balance, depositAmount);
+}
+```
+
+#### Edge Case Testing
+```solidity
+function test_EdgeCase_MaxUint256() public {
+    uint256 maxAmount = type(uint256).max;
+    // Test behavior at maximum values
+}
+
+function test_EdgeCase_ZeroAmount() public {
+    vm.expectRevert("Amount must be greater than 0");
+    myContract.transfer(user, 0);
+}
+```
+
+#### Gas Testing
+```solidity
+function test_GasConsumption_CriticalFunctions() public {
+    uint256 gasStart = gasleft();
+    myContract.criticalFunction();
+    uint256 gasUsed = gasStart - gasleft();
+
+    // Assert gas is within acceptable range
+    assertLt(gasUsed, 100000, "Gas consumption too high");
+}
+```
 
 ## Test Coverage Requirements
-- 100% of public/external functions
-- All state transitions
-- Edge cases and boundary conditions
-- Failure scenarios (expecting reverts)
-- Gas consumption benchmarks
-
-## Test Structure (Foundry)
-contract ContractTest is Test {
-    // Setup
-    function setUp() public {
-        // Initialize test environment
-    }
-
-    // Unit tests: test_FunctionName_Scenario()
-    function test_Transfer_ValidAmount() public {
-        // Arrange
-        // Act
-        // Assert
-    }
-
-    // Fuzz tests: testFuzz_FunctionName()
-    function testFuzz_Transfer(uint256 amount) public {
-        vm.assume(amount > 0 && amount <= totalSupply);
-        // Test with random valid inputs
-    }
-
-    // Invariant tests: invariant_PropertyName()
-    function invariant_TotalSupplyConstant() public {
-        // Assert system-wide properties
-    }
-
-    // Failure tests: testFail_FunctionName_Reason()
-    function testFail_Transfer_InsufficientBalance() public {
-        // Should revert
-    }
-}
-
-## Test Helpers
-- Use vm.prank() for impersonation
-- Use vm.expectRevert() for failure testing
-- Use vm.warp() for time manipulation
-- Use forge-std/console.sol for debugging
+- Line Coverage: >= 95%
+- Branch Coverage: >= 90%
+- Function Coverage: 100%
+- All modifiers must be tested
+- All error conditions must be tested
+- All events must be verified
 ```
 
-### 3.5 最適化エージェント（`.cursorrules.optimize`）
+### 1.7 最適化特化ルール（optimize-rules）
 
 ```markdown
-# Solidity Gas Optimization Agent
+# Solidity Optimization Specialist Rules
 
-You are optimizing contracts for minimal gas consumption.
+## Gas Optimization Priority Matrix
 
-## Storage Optimization
-- Pack structs (group uint128, uint64, address)
-- Use mappings over arrays for single lookups
-- Delete unused storage with delete keyword
-- Use immutable for constructor-set values
-- Use constant for compile-time values
+| Optimization Type | Impact | Difficulty | Priority |
+|------------------|--------|------------|----------|
+| Storage Layout | High | Medium | Critical |
+| Storage vs Memory | High | Low | Critical |
+| Loop Optimization | High | Medium | High |
+| Function Visibility | Medium | Low | High |
+| Arithmetic Optimization | Low | Low | Medium |
+
+## Storage Optimization Patterns
+
+### Variable Packing
+```solidity
+// Before: 3 storage slots (96 bytes)
+contract Inefficient {
+    uint256 amount;     // Slot 0
+    address owner;      // Slot 1 (20 bytes wasted)
+    uint256 timestamp;  // Slot 2
+}
+
+// After: 2 storage slots (64 bytes)
+contract Optimized {
+    uint256 amount;     // Slot 0
+    address owner;      // Slot 1 (20 bytes)
+    uint96 timestamp;   // Slot 1 (12 bytes)
+}
+```
+
+### Storage Reading Optimization
+```solidity
+// Before: Multiple SLOAD operations
+function inefficient() public view returns (uint256) {
+    return balances[msg.sender] + balances[msg.sender] * rate;
+}
+
+// After: Single SLOAD operation
+function optimized() public view returns (uint256) {
+    uint256 balance = balances[msg.sender];
+    return balance + balance * rate;
+}
+```
+
+### Mapping vs Array
+```solidity
+// Use mappings for single lookups
+mapping(address => uint256) public balances;
+
+// Use arrays only when iteration is required
+address[] public holders;
+```
 
 ## Computation Optimization
-- Cache storage reads in local variables
-- Use unchecked blocks for safe math
-- Short-circuit conditions (cheapest first)
-- Avoid loops over dynamic arrays
-- Batch operations when possible
+
+### Unchecked Blocks
+```solidity
+// When overflow is impossible
+function increment(uint256 x) public pure returns (uint256) {
+    unchecked {
+        return x + 1; // Save gas when x < max - 1
+    }
+}
+```
+
+### Short-Circuit Evaluation
+```solidity
+// Order conditions by likelihood and cost
+function optimizedCheck(uint256 x, uint256 y) public view {
+    // Check cheap local variable first
+    if (x == 0 || expensive_storage_check()) {
+        // ...
+    }
+}
+```
+
+### Loop Optimization
+```solidity
+// Cache array length
+uint256 length = array.length;
+for (uint256 i; i < length;) {
+    // Process array[i]
+    unchecked { ++i; }
+}
+```
 
 ## Function Optimization
-- Use external over public (no ABI encoding)
-- Use calldata over memory for inputs
-- Return memory over storage when possible
-- Inline simple functions
-- Combine multiple reads into single SLOAD
 
-## Analysis Process
-1. Run forge test --gas-report
-2. Identify high-cost functions
-3. Analyze storage access patterns
-4. Propose specific optimizations
-5. Measure improvement
+### Visibility Optimization
+- `external` over `public` (no ABI encoding for external)
+- `private` over `internal` when inheritance not needed
+- `pure` over `view` when no state reading
+- `view` over regular when no state changes
 
-## Output Format
-Function: functionName()
-Current: X gas
-Optimized: Y gas
-Savings: Z gas (W%)
-Changes: [specific changes made]
+### Parameter Optimization
+```solidity
+// Use calldata for read-only arrays/strings
+function process(uint256[] calldata data) external {
+    // More efficient than memory for read-only
+}
+
+// Return storage references when possible
+function getUser(address addr) external view returns (User storage) {
+    return users[addr];
+}
+```
+
+## Optimization Checklist
+- [ ] Storage variables packed efficiently
+- [ ] Hot variables separated from cold
+- [ ] Loops optimized (cached length, unchecked increment)
+- [ ] External functions use calldata
+- [ ] Storage reads cached in local variables
+- [ ] Unnecessary SLOADs eliminated
+- [ ] Events used instead of storage for logs
+- [ ] Short-circuit evaluation ordered correctly
+- [ ] Unchecked arithmetic where safe
+- [ ] Function visibility optimized
 ```
 
 ---
 
-## 第4部: CLIツール最適化 🛠️
+## 第2部: 各AIツール固有の適用方法 🔧
 
-### 4.1 統合CLIツール（`solidity-cli`）
+### 2.1 AIツール別設定マトリックス
 
-```bash
-#!/bin/bash
-# tools/solidity-cli - Solidity開発統合CLIツール
+| AIツール | 設定ファイル | 設定方法 | 特有の機能 |
+|---------|------------|---------|-----------|
+| **Cursor** | `.cursorrules` | プロジェクトルートに配置 | ファイル単位のルール適用 |
+| **Claude Code** | Project Instructions | UI経由で設定 | MCPツール連携 |
+| **Amazon Q** | `.amazon-q/` | CLIコマンドで設定 | AWS統合 |
+| **GitHub Copilot** | `.github/copilot/` | リポジトリ設定 | GitHub統合 |
+| **Continue** | `.continue/config.json` | JSON設定 | カスタムプロバイダー |
 
-set -e
-
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-PROJECT_ROOT="$( cd "$SCRIPT_DIR/.." && pwd )"
-
-# カラー出力
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-NC='\033[0m'
-
-function print_status() {
-    echo -e "${GREEN}[✓]${NC} $1"
-}
-
-function print_error() {
-    echo -e "${RED}[✗]${NC} $1"
-}
-
-function print_warning() {
-    echo -e "${YELLOW}[!]${NC} $1"
-}
-
-case "$1" in
-    init)
-        print_status "Initializing Solidity project..."
-        forge init --force
-        npm init -y
-        npm install --save-dev @openzeppelin/contracts
-        cp -r "$SCRIPT_DIR/templates/." .
-        print_status "Project initialized successfully"
-        ;;
-
-    check-all)
-        print_status "Running comprehensive checks..."
-
-        # Compilation
-        echo -e "\n${GREEN}=== Compilation ===${NC}"
-        forge build || print_error "Compilation failed"
-
-        # Linting
-        echo -e "\n${GREEN}=== Linting ===${NC}"
-        solhint 'contracts/**/*.sol' || print_warning "Lint issues found"
-
-        # Security
-        echo -e "\n${GREEN}=== Security Analysis ===${NC}"
-        slither . --print human-summary || print_warning "Security issues found"
-
-        # Tests
-        echo -e "\n${GREEN}=== Tests ===${NC}"
-        forge test || print_error "Tests failed"
-
-        # Coverage
-        echo -e "\n${GREEN}=== Coverage ===${NC}"
-        forge coverage || true
-        ;;
-
-    security-deep)
-        print_status "Running deep security analysis..."
-
-        # Slither with all detectors
-        slither . --print human-summary
-        slither . --print contract-summary
-
-        # Generate markdown report
-        slither . --print human-summary > security-report.md
-        print_status "Report saved to security-report.md"
-        ;;
-
-    gas-profile)
-        print_status "Generating gas profile..."
-        forge test --gas-report > gas-report.txt
-
-        # Extract and format high gas functions
-        echo -e "\n${YELLOW}Functions using >50000 gas:${NC}"
-        grep -E "[5-9][0-9]{4,}|[0-9]{6,}" gas-report.txt || echo "None found"
-        ;;
-
-    agent)
-        # エージェント切り替え
-        agent_type=$2
-        if [ -f ".cursorrules.$agent_type" ]; then
-            cp ".cursorrules.$agent_type" .cursorrules
-            print_status "Switched to $agent_type agent"
-            echo "Current focus: $(grep "Primary Focus" .cursorrules | head -1)"
-        else
-            print_error "Agent type '$agent_type' not found"
-            echo "Available agents: design, dev, security, test, optimize"
-        fi
-        ;;
-
-    template)
-        # テンプレート生成
-        template_type=$2
-        case "$template_type" in
-            erc20)
-                cp "$SCRIPT_DIR/templates/ERC20Template.sol" contracts/
-                print_status "ERC20 template created"
-                ;;
-            erc721)
-                cp "$SCRIPT_DIR/templates/ERC721Template.sol" contracts/
-                print_status "ERC721 template created"
-                ;;
-            *)
-                print_error "Unknown template: $template_type"
-                echo "Available: erc20, erc721"
-                ;;
-        esac
-        ;;
-
-    *)
-        echo "Solidity Development CLI"
-        echo ""
-        echo "Usage: $0 <command> [options]"
-        echo ""
-        echo "Commands:"
-        echo "  init          - Initialize new Solidity project"
-        echo "  check-all     - Run all checks (compile, lint, security, test)"
-        echo "  security-deep - Deep security analysis with report"
-        echo "  gas-profile   - Generate gas consumption profile"
-        echo "  agent <type>  - Switch agent (design/dev/security/test/optimize)"
-        echo "  template <type> - Generate template (erc20/erc721)"
-        ;;
-esac
-```
-
-### 4.2 セキュリティ特化スクリプト
-
-```python
-#!/usr/bin/env python3
-# tools/parse-security.py - Slither結果を解析して修正提案を生成
-
-import json
-import sys
-
-def parse_slither_output(json_file):
-    """Slither JSONを解析して修正提案を生成"""
-    with open(json_file, 'r') as f:
-        data = json.load(f)
-
-    issues_by_severity = {
-        'High': [],
-        'Medium': [],
-        'Low': [],
-        'Informational': []
-    }
-
-    for detector in data.get('results', {}).get('detectors', []):
-        severity = detector['severity']
-        issues_by_severity[severity].append({
-            'check': detector['check'],
-            'impact': detector['impact'],
-            'confidence': detector['confidence'],
-            'description': detector['description'],
-            'elements': detector.get('elements', [])
-        })
-
-    # 修正提案を生成
-    print("# Security Analysis Report\n")
-
-    for severity in ['High', 'Medium', 'Low', 'Informational']:
-        issues = issues_by_severity[severity]
-        if issues:
-            print(f"## {severity} Severity Issues ({len(issues)})\n")
-            for i, issue in enumerate(issues, 1):
-                print(f"### {i}. {issue['check']}")
-                print(f"**Impact**: {issue['impact']}")
-                print(f"**Confidence**: {issue['confidence']}")
-                print(f"\n{issue['description']}\n")
-                print(generate_fix_suggestion(issue['check']))
-                print("---\n")
-
-def generate_fix_suggestion(check_type):
-    """チェックタイプに基づいて修正提案を生成"""
-    fixes = {
-        'reentrancy': """
-**Fix**:
-```solidity
-// Add ReentrancyGuard
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-contract MyContract is ReentrancyGuard {
-    function withdraw() external nonReentrant {
-        // Apply CEI pattern
-        uint256 amount = balances[msg.sender];
-        balances[msg.sender] = 0;
-        (bool success, ) = msg.sender.call{value: amount}("");
-        require(success, "Transfer failed");
-    }
-}
-```""",
-        'missing-access-control': """
-**Fix**:
-```solidity
-import "@openzeppelin/contracts/access/Ownable.sol";
-contract MyContract is Ownable {
-    function sensitiveFunction() external onlyOwner {
-        // Protected function
-    }
-}
-```""",
-        'unchecked-return-value': """
-**Fix**:
-```solidity
-// Always check return values
-(bool success, bytes memory data) = target.call(payload);
-require(success, "Call failed");
-```"""
-    }
-
-    for key in fixes:
-        if key in check_type.lower():
-            return fixes[key]
-
-    return "**Fix**: Review the code and apply appropriate security patterns."
-
-if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        print("Usage: python parse-security.py <slither-output.json>")
-        sys.exit(1)
-
-    parse_slither_output(sys.argv[1])
-```
-
----
-
-## 第5部: 実践的な使用方法 💡
-
-### 5.1 新規プロジェクト開始
-
-```bash
-# 1. プロジェクト初期化
-./tools/solidity-cli init
-
-# 2. 設計エージェントに切り替え
-./tools/solidity-cli agent design
-
-# 3. Cursorで要件を入力して設計
-# "Design an ERC-20 token with pause and burn features"
-
-# 4. 開発エージェントに切り替え
-./tools/solidity-cli agent dev
-
-# 5. 設計を基に実装
-# "Implement the designed token contract"
-
-# 6. セキュリティチェック
-./tools/solidity-cli check-all
-```
-
-### 5.2 既存コードのセキュリティ監査
-
-```bash
-# 1. セキュリティエージェントに切り替え
-./tools/solidity-cli agent security
-
-# 2. 深層セキュリティ分析実行
-./tools/solidity-cli security-deep
-
-# 3. Cursorで修正依頼
-# "Fix the high severity issues in security-report.md"
-
-# 4. 再チェック
-./tools/solidity-cli check-all
-```
-
-### 5.3 ガス最適化
-
-```bash
-# 1. 最適化エージェントに切り替え
-./tools/solidity-cli agent optimize
-
-# 2. ガスプロファイル生成
-./tools/solidity-cli gas-profile
-
-# 3. Cursorで最適化依頼
-# "Optimize the high gas consumption functions"
-
-# 4. 改善確認
-./tools/solidity-cli gas-profile
-```
-
----
-
-## 第6部: ルールファイル管理 📚
-
-### 6.1 ディレクトリ構造
-
-```
-project-root/
-├── .cursorrules              # アクティブなルール
-├── .cursorrules.design       # 設計エージェント
-├── .cursorrules.dev          # 開発エージェント
-├── .cursorrules.security     # セキュリティエージェント
-├── .cursorrules.test         # テストエージェント
-├── .cursorrules.optimize     # 最適化エージェント
-├── contracts/                # Solidityコントラクト
-├── test/                     # Foundryテスト
-├── tools/
-│   ├── solidity-cli         # 統合CLIツール
-│   ├── parse-security.py    # セキュリティ解析
-│   └── templates/           # コントラクトテンプレート
-└── docs/
-    ├── agents/              # エージェント詳細ドキュメント
-    └── workflows/           # ワークフロー手順書
-```
-
-### 6.2 ルールファイルのカスタマイズ
-
-プロジェクト特有の要件を追加:
+### 2.2 Cursor向け設定
 
 ```markdown
-# .cursorrules.projectにプロジェクト固有ルールを追加
+# .cursorrules 配置と構成
 
-## Project Specific Rules
-- Use Chainlink VRF for randomness
-- Implement EIP-2981 for royalties
-- Target Polygon network (lower gas costs)
-- Integrate with specific DEX (Uniswap V3)
+プロジェクトルート/
+├── .cursorrules              # メインルール
+├── .cursorrules.folder/      # フォルダ別ルール
+│   ├── contracts/
+│   │   └── .cursorrules     # コントラクト専用
+│   └── test/
+│       └── .cursorrules     # テスト専用
+```
+
+### 2.3 Claude Code向け設定
+
+Claude Codeは Project Instructions 機能を使用：
+1. プロジェクトを開く
+2. Project Instructions に設定
+3. MCPサーバーと連携して動的にルール適用
+
+### 2.4 Amazon Q Developer向け設定
+
+```bash
+# Amazon Q は workspace 設定を使用
+.amazon-q/
+├── instructions.md    # ルールファイル
+├── context.json      # コンテキスト設定
+└── tools.json        # ツール統合設定
+```
+
+### 2.5 GitHub Copilot向け設定
+
+```markdown
+# .github/copilot-instructions.md
+
+GitHub Copilot 専用の設定。
+リポジトリレベルで適用され、
+すべてのコントリビューターに共有される。
 ```
 
 ---
 
-## 第7部: 品質保証チェックリスト ✅
+## 第3部: CLIツール計画（将来の実装） 💻
 
-### 7.1 開発フローチェックリスト
+### 3.1 アーキテクチャ概要
 
-| フェーズ | チェック項目 | ツール/エージェント |
-|---------|------------|------------------|
-| **設計** | □ 要件明確化<br>□ セキュリティ考慮<br>□ ガス見積もり | 設計エージェント |
-| **実装** | □ コンパイル成功<br>□ Lint通過<br>□ 標準準拠 | 開発エージェント<br>`solidity-cli check-all` |
-| **セキュリティ** | □ Slither通過<br>□ 高リスク0件<br>□ アクセス制御確認 | セキュリティエージェント<br>`solidity-cli security-deep` |
-| **テスト** | □ カバレッジ90%+<br>□ Fuzzテスト<br>□ インバリアント | テストエージェント<br>`forge coverage` |
-| **最適化** | □ ガス削減20%+<br>□ ストレージ最適化 | 最適化エージェント<br>`forge test --gas-report` |
+TypeScript/Node.jsベースの拡張可能なCLIツール：
 
-### 7.2 リリース前チェックリスト
+```typescript
+// CLI アーキテクチャ（概念）
+interface SolidityAgentCLI {
+  // コア機能
+  init(): Promise<void>;           // プロジェクト初期化
+  applyRules(): Promise<void>;     // ルール適用
+  switchAgent(): Promise<void>;    // エージェント切り替え
+
+  // 分析機能
+  analyze(): Promise<AnalysisResult>;
+  security(): Promise<SecurityReport>;
+  optimize(): Promise<OptimizationReport>;
+
+  // 統合機能
+  integrate(): Promise<void>;      // ツール統合
+  generate(): Promise<void>;       // テンプレート生成
+}
+```
+
+### 3.2 技術スタック（計画）
+
+```json
+{
+  "dependencies": {
+    "yargs": "^17.0.0",           // CLI フレームワーク
+    "commander": "^11.0.0",       // 代替CLI フレームワーク
+    "chalk": "^5.0.0",            // カラー出力
+    "inquirer": "^9.0.0",         // 対話式プロンプト
+    "ora": "^6.0.0",              // スピナー/プログレス
+    "cosmiconfig": "^8.0.0",      // 設定ファイル管理
+    "zod": "^3.0.0"               // スキーマ検証
+  }
+}
+```
+
+### 3.3 コマンド体系（抽象設計）
 
 ```bash
-#!/bin/bash
-# tools/release-check.sh - リリース前の最終チェック
+# 初期化
+solidity-agent init [options]
+  --framework <foundry|hardhat>
+  --ai-tool <cursor|claude|amazonq|copilot>
 
-echo "=== Release Readiness Check ==="
+# ルール管理
+solidity-agent rules
+  apply <agent-type>      # ルール適用
+  create <name>          # カスタムルール作成
+  merge <rules...>       # ルール統合
+  validate              # ルール検証
 
-# 1. コンパイル
-forge build || exit 1
+# 分析
+solidity-agent analyze
+  security [contract]    # セキュリティ分析
+  gas [contract]        # ガス分析
+  coverage             # カバレッジ分析
 
-# 2. 全テスト
-forge test || exit 1
+# 生成
+solidity-agent generate
+  template <type>      # テンプレート生成
+  test <contract>     # テスト生成
+  interface <contract> # インターフェース生成
+```
 
-# 3. カバレッジ確認
-coverage=$(forge coverage | grep "Total" | awk '{print $3}')
-if [ "${coverage%\%}" -lt 90 ]; then
-    echo "❌ Coverage below 90%"
-    exit 1
-fi
+### 3.4 拡張性の考慮
 
-# 4. セキュリティ
-slither . --print human-summary | grep "High" && exit 1
+```typescript
+// プラグインシステム（概念）
+interface SolidityAgentPlugin {
+  name: string;
+  version: string;
 
-echo "✅ All checks passed - Ready for release!"
+  // ライフサイクルフック
+  onInit?(): Promise<void>;
+  onAnalyze?(): Promise<void>;
+  onGenerate?(): Promise<void>;
+
+  // カスタムコマンド
+  commands?: CommandDefinition[];
+
+  // ルール拡張
+  rules?: RuleDefinition[];
+}
 ```
 
 ---
 
-## 第8部: トラブルシューティング 🔧
+## 第4部: 実装ロードマップ 📅
 
-### 8.1 よくある問題と解決
+### Phase 1: ルールファイル整備（即実施可能）
 
-| 問題 | 解決方法 |
-|------|---------|
-| ルールが適用されない | `.cursorrules`ファイルの存在確認、Cursor再起動 |
-| Slither警告が多い | `.slither.config.json`で偽陽性を除外設定 |
-| ガス使用量が高い | 最適化エージェントで分析、ストレージアクセス削減 |
-| テストが遅い | `--match-contract`でテスト範囲を限定 |
+**期間**: 1-2週間
 
-### 8.2 デバッグ用コマンド
+- [ ] 5つの特化ルールファイル作成
+- [ ] 各AIツール向けのサンプル設定
+- [ ] ルール適用ガイドライン作成
+- [ ] テストプロジェクトでの検証
 
-```bash
-# コントラクトサイズ確認
-forge build --sizes
+### Phase 2: 基本ツール実装（1ヶ月）
 
-# 特定テストのデバッグ
-forge test -vvv --match-test test_SpecificFunction
+**期間**: 3-4週間
 
-# ガス使用量の詳細
-forge test --gas-report --match-contract MyContract
+- [ ] TypeScript プロジェクトセットアップ
+- [ ] 基本CLIコマンド実装（init, apply）
+- [ ] 各AIツール向けアダプター作成
+- [ ] 基本的なテストスイート
 
-# ストレージレイアウト確認
-forge inspect MyContract storage
-```
+### Phase 3: 高度な機能（2-3ヶ月）
+
+**期間**: 8-12週間
+
+- [ ] セキュリティ分析統合
+- [ ] ガス最適化分析
+- [ ] テンプレート生成システム
+- [ ] プラグインシステム
+
+### Phase 4: エコシステム統合（継続的）
+
+- [ ] Foundry/Hardhat 深層統合
+- [ ] CI/CD パイプライン統合
+- [ ] VS Code Extension
+- [ ] Web UI Dashboard
+
+---
+
+## 第5部: 品質保証とベストプラクティス ✅
+
+### 5.1 ルールファイル品質チェックリスト
+
+| カテゴリ | チェック項目 | 重要度 |
+|---------|------------|--------|
+| **完全性** | すべての開発フェーズをカバー | Critical |
+| **具体性** | 具体的なコード例を含む | High |
+| **一貫性** | 命名規則、スタイルの統一 | Medium |
+| **保守性** | 定期的な更新、バージョン管理 | High |
+| **互換性** | 各AIツールでの動作確認 | Critical |
+
+### 5.2 導入時の推奨プロセス
+
+1. **評価フェーズ**
+   - 現在の開発プロセスの分析
+   - 適用するルールセットの選定
+   - パイロットプロジェクトの選定
+
+2. **導入フェーズ**
+   - ルールファイルのカスタマイズ
+   - チームメンバーへのトレーニング
+   - 段階的な適用（まず設計、次に開発...）
+
+3. **最適化フェーズ**
+   - フィードバックの収集
+   - ルールの調整
+   - ベストプラクティスの文書化
+
+### 5.3 成功指標
+
+| 指標 | 目標値 | 測定方法 |
+|------|--------|---------|
+| セキュリティ脆弱性削減 | 80%減 | Slither/Mythril検出数 |
+| 開発速度向上 | 30%向上 | PRマージまでの時間 |
+| コードカバレッジ | 90%以上 | Foundry coverage |
+| ガス効率改善 | 20%削減 | Gas reporter |
 
 ---
 
 ## まとめ
 
-本システムは以下を実現します：
+本計画は、Solidityスマートコントラクト開発における品質とセキュリティを向上させるための包括的なルールファイル整備計画です。
 
-1. **ルールファイルによる専門性の分離** - 各フェーズに特化したエージェント
-2. **CLIツールによる品質保証** - 自動化されたチェックと分析
-3. **実践的なワークフロー** - 明確な手順とツールサポート
-4. **カスタマイズ可能** - プロジェクト要件に応じた拡張
+**重要なポイント**：
+1. **ルールファイル優先** - まず高品質なルールファイルを整備
+2. **段階的実装** - CLIツールは後から段階的に実装
+3. **AIツール非依存** - 各ツールの特性を活かしつつ、共通ルールを維持
+4. **拡張性重視** - 将来の機能追加を考慮した設計
 
-**成功の鍵**: 適切なエージェント選択と、CLIツールによる継続的な品質チェック
+**次のアクション**：
+1. 5つの特化ルールファイルの作成開始
+2. パイロットプロジェクトでの検証
+3. チームフィードバックの収集
+4. TypeScript CLIの基本実装開始
 
 ---
 
-*Document Version: 2.0.0*
-*Last Updated: 2025-01-02*
-*Focus: Rule-based agents and CLI tools only*
+*Document Version: 3.0.0*
+*Last Updated: 2025-01-03*
+*Focus: Solidity rule files with extensible CLI planning*
