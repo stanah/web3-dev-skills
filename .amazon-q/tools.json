@@ -1,0 +1,20 @@
+{
+  "staticAnalysis": [
+    {
+      "name": "slither",
+      "command": "pnpm slither .",
+      "usage": "検出された警告は重大度・影響・修正案を添えて報告する"
+    }
+  ],
+  "formatters": [
+    {
+      "name": "forge fmt",
+      "command": "pnpm forge fmt"
+    }
+  ],
+  "tdd": {
+    "red": "最初に失敗するテストを追加し、意図したバグを再現する",
+    "green": "最小限の実装でテストを通す",
+    "refactor": "重複排除や最適化を行い、テストを再実行する"
+  }
+}

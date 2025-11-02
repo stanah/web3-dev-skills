@@ -1,0 +1,20 @@
+{
+  "projectName": "Solidity Agent Rules",
+  "primaryLanguage": "Solidity",
+  "ruleFiles": [
+    "rules/base-rules.md",
+    "rules/design-rules.md",
+    "rules/dev-rules.md",
+    "rules/security-rules.md",
+    "rules/test-rules.md",
+    "rules/optimize-rules.md"
+  ],
+  "testing": {
+    "framework": "foundry",
+    "commands": [
+      "pnpm forge test",
+      "pnpm forge coverage",
+      "pnpm forge test --gas-report"
+    ]
+  }
+}

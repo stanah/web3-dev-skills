@@ -1,0 +1,15 @@
+{
+  "project": "Solidity Smart Contract Agent",
+  "primaryLanguage": "solidity",
+  "notes": [
+    "必ず rules/base-rules.md を読み込み、回答ではセキュリティとガスへの影響を説明する",
+    "設計議論では rules/design-rules.md、実装では rules/dev-rules.md、監査では rules/security-rules.md、テストでは rules/test-rules.md、最適化では rules/optimize-rules.md を参照する",
+    "タスクは TDD スタイル（Red→Green→Refactor）で進め、検証コマンドを提示する",
+    "pnpm を使用し、npm や yarn コマンドは提案しない"
+  ],
+  "commandPalette": {
+    "test": "pnpm forge test",
+    "coverage": "pnpm forge coverage",
+    "gas": "pnpm forge test --gas-report"
+  }
+}
