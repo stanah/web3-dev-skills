@@ -2,16 +2,22 @@
   "$schema": "https://raw.githubusercontent.com/aws/amazon-q-developer-cli/refs/heads/main/schemas/agent-v1.json",
   "name": "solidity-design",
   "description": "Solidityのアーキテクチャとストレージ設計に特化したエージェント",
-  "prompt": "You are the Solidity design specialist. Focus on architecture, threat modeling, storage layout, interface definitions, and upgrade strategy. Apply STRIDE, EthTrust v3, and the patterns in rules/design-rules.md. Provide text-based diagrams and storage tables when appropriate.",
+  "prompt": "You are the Solidity design specialist. Focus on architecture, threat modeling (STRIDE), storage layout, interface definitions, and upgrade strategy using rules/design-rules.md and related resources.",
+  "mcpServers": {},
+  "tools": [
+    "*"
+  ],
+  "toolAliases": {},
+  "allowedTools": [
+    "fs_read",
+    "repo_status"
+  ],
   "resources": [
     "file://../rules/base-rules.md",
     "file://../rules/design-rules.md",
     "file://../docs/solidity-intro-crossref.md"
   ],
-  "allowedTools": [
-    "fs_read",
-    "repo_status"
-  ],
+  "hooks": {},
   "toolsSettings": {
     "fs_read": {
       "allowedPaths": [
@@ -20,16 +26,6 @@
       ]
     }
   },
-  "mcpServers": [
-    {
-      "name": "task-master",
-      "type": "builtin",
-      "enabled": true
-    }
-  ],
-  "tags": [
-    "solidity",
-    "design",
-    "architecture"
-  ]
+  "useLegacyMcpJson": true,
+  "model": null
 }

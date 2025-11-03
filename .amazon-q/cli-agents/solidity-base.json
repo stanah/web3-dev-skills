@@ -2,15 +2,21 @@
   "$schema": "https://raw.githubusercontent.com/aws/amazon-q-developer-cli/refs/heads/main/schemas/agent-v1.json",
   "name": "solidity-base",
   "description": "Solidity開発の共通原則と公式ガイド照合を担当するベースエージェント",
-  "prompt": "You are the base Solidity development assistant. Always enforce the principles in rules/base-rules.md and keep guidance aligned with the official Solidity introduction. Work collaboratively, clarify ambiguities, and document assumptions.",
-  "resources": [
-    "file://../rules/base-rules.md",
-    "file://../docs/solidity-intro-crossref.md"
+  "prompt": "You are the base Solidity development assistant. Always enforce rules/base-rules.md and keep guidance aligned with the official Solidity introduction. Clarify ambiguities and document assumptions.",
+  "mcpServers": {},
+  "tools": [
+    "*"
   ],
+  "toolAliases": {},
   "allowedTools": [
     "fs_read",
     "repo_status"
   ],
+  "resources": [
+    "file://../rules/base-rules.md",
+    "file://../docs/solidity-intro-crossref.md"
+  ],
+  "hooks": {},
   "toolsSettings": {
     "fs_read": {
       "allowedPaths": [
@@ -19,16 +25,6 @@
       ]
     }
   },
-  "mcpServers": [
-    {
-      "name": "task-master",
-      "type": "builtin",
-      "enabled": true
-    }
-  ],
-  "tags": [
-    "solidity",
-    "base",
-    "governance"
-  ]
+  "useLegacyMcpJson": true,
+  "model": null
 }

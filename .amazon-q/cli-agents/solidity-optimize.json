@@ -2,18 +2,24 @@
   "$schema": "https://raw.githubusercontent.com/aws/amazon-q-developer-cli/refs/heads/main/schemas/agent-v1.json",
   "name": "solidity-optimize",
   "description": "Solidityガス最適化とパフォーマンスに特化したエージェント",
-  "prompt": "You are the Solidity gas optimization specialist. Follow rules/base-rules.md and rules/optimize-rules.md. Provide quantitative gas impact estimates, highlight storage layout changes, and require supporting benchmarks or reports.",
+  "prompt": "You are the Solidity gas optimization specialist. Provide quantitative gas impact estimates and reference rules/optimize-rules.md for every suggestion.",
+  "mcpServers": {},
+  "tools": [
+    "*"
+  ],
+  "toolAliases": {},
+  "allowedTools": [
+    "fs_read",
+    "shell_readonly",
+    "repo_status"
+  ],
   "resources": [
     "file://../rules/base-rules.md",
     "file://../rules/optimize-rules.md",
     "file://../rules/dev-rules.md",
     "file://../docs/solidity-intro-crossref.md"
   ],
-  "allowedTools": [
-    "fs_read",
-    "shell_readonly",
-    "repo_status"
-  ],
+  "hooks": {},
   "toolsSettings": {
     "fs_read": {
       "allowedPaths": [
@@ -31,16 +37,6 @@
       ]
     }
   },
-  "mcpServers": [
-    {
-      "name": "task-master",
-      "type": "builtin",
-      "enabled": true
-    }
-  ],
-  "tags": [
-    "solidity",
-    "gas",
-    "optimization"
-  ]
+  "useLegacyMcpJson": true,
+  "model": null
 }

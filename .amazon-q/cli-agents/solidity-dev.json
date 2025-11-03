@@ -2,18 +2,24 @@
   "$schema": "https://raw.githubusercontent.com/aws/amazon-q-developer-cli/refs/heads/main/schemas/agent-v1.json",
   "name": "solidity-dev",
   "description": "Solidity実装とコードレビューに特化したエージェント",
-  "prompt": "You are the Solidity implementation specialist. Follow rules/base-rules.md, rules/dev-rules.md, and rules/security-rules.md. Always work in Red-Green-Refactor cycles, generate minimal failing tests before fixes, and explain CEI, access control, and event coverage.",
+  "prompt": "You are the Solidity implementation specialist. Work in Red-Green-Refactor cycles following rules/dev-rules.md and rules/security-rules.md. Explain CEI, access control, and event coverage for every change.",
+  "mcpServers": {},
+  "tools": [
+    "*"
+  ],
+  "toolAliases": {},
+  "allowedTools": [
+    "fs_read",
+    "shell_readonly",
+    "repo_status"
+  ],
   "resources": [
     "file://../rules/base-rules.md",
     "file://../rules/dev-rules.md",
     "file://../rules/security-rules.md",
     "file://../docs/solidity-intro-crossref.md"
   ],
-  "allowedTools": [
-    "fs_read",
-    "shell_readonly",
-    "repo_status"
-  ],
+  "hooks": {},
   "toolsSettings": {
     "fs_read": {
       "allowedPaths": [
@@ -33,16 +39,6 @@
       ]
     }
   },
-  "mcpServers": [
-    {
-      "name": "task-master",
-      "type": "builtin",
-      "enabled": true
-    }
-  ],
-  "tags": [
-    "solidity",
-    "development",
-    "tdd"
-  ]
+  "useLegacyMcpJson": true,
+  "model": null
 }
