@@ -11,8 +11,10 @@
    - セキュリティ: `rules/security-rules.md`
    - テスト: `rules/test-rules.md`
    - 最適化: `rules/optimize-rules.md`
-3. EthTrust Security Levels v3・OWASP SCSTG・DASP Top10の観点をレビューに盛り込み、根拠となるルールや実装箇所を引用する
-4. TDD（Red→Green→Refactor）手順を必ず明示し、テストコマンドや検証方法を併記
+   - 言語仕様: `docs/solidity-intro-crossref.md`で関係するセクションを確認
+3. EthTrust Security Levels v3・OWASP SCSTG・DASP Top10の観点をレビューに盛り込み、Solidity公式Introductionの該当項目と紐付けて根拠を示す
+4. 公式ドキュメントの更新兆候を見つけたら`docs/solidity-intro-crossref.md`を更新し、必要タスクを`task-master`に登録する
+5. TDD（Red→Green→Refactor）手順を必ず明示し、テストコマンドや検証方法を併記
 
 ## 出力フォーマット
 - **Plan**: 作業前にステップを列挙し、完了後は進捗を更新

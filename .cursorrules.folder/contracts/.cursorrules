@@ -8,6 +8,7 @@
 - 実装: `rules/dev-rules.md`
 - セキュリティレビュー: `rules/security-rules.md`
 - ガス最適化: `rules/optimize-rules.md`
+- 言語仕様: `docs/solidity-intro-crossref.md`で該当セクションを確認する
 
 ## 作業フロー
 1. 仕様確認: 設計資料と`rules/design-rules.md`を参照し、状態遷移・アクセス制御を文章化
@@ -20,4 +21,5 @@
 - `emit`・カスタムエラー・NatSpecの有無
 - 外部コールの戻り値・エラー処理・信頼境界の検証
 - DASP Top10リスク（権限、フロントラン、フラッシュローン等）に対する防御があるか
+- Solidity公式Introductionで強調される`delegatecall`/`selfdestruct`/`CREATE2`/プリコンパイルの扱いを確認する
 - カバレッジが不足する場合はテストチームへ連携

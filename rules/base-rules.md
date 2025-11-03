@@ -12,6 +12,12 @@
 - ツールチェーンはFoundryを優先し、Hardhatなど他フレームワークを併用する際もpnpmによる依存管理と再現可能な`foundry.toml`/`pnpm-lock.yaml`を維持する
 - CIでは`pnpm forge build`, `pnpm forge test`, `pnpm forge coverage`, `pnpm forge test --gas-report`を基準ジョブとして設定し、SMTChecker警告やコンパイラWarningはゼロを基準とする
 
+## Ethereum基礎理解（必須）
+- アカウント種別（EOA/コントラクト）と`nonce`・`balance`・コード領域の違いを理解し、権限設計とリプレイ対策に反映する
+- トランザクションライフサイクル（メモリプール→取り込み→実行→最終確定）とEIP-1559料金体系（`baseFee`/`maxFeePerGas`/`priorityFee`）を前提にガス予算とリトライ戦略を設計する
+- ブロックチェーンの決定性制約（同ブロック内の順序不定、再編成）を前提に、読み取り後すぐの前提を置かない
+- 主要プリコンパイル（`ecrecover`/`sha256`/`blake2`/`bn256`/`modexp` 等）のガス特性を把握し、安易に呼び出さずテストと監査計画に織り込む
+
 ## サプライチェーンと鍵管理
 - 外部依存は監査済み・広く利用されるライブラリのみ採用し、ハッシュ固定・レビュー済みPRのみマージする
 - アカウントやロールに紐づく鍵はマルチシグ・ハードウェアウォレット・分散鍵管理を前提とし、権限委譲はPausible/Timelockを組み合わせて段階化する
@@ -36,3 +42,4 @@
 - 提案はセキュリティ・ガス・保守性・運用性・ユーザ影響の評価を伴い、重大リスクは優先度順に報告する
 - 修正案には最小再現テスト・静的解析コマンド・リリース手順を添付し、TDD（Red→Green→Refactor）を守る
 - 監査・レビュー結果はEthTrust v3の分類（S/M/Q）に紐づけ、OWASP SCSTGのテストケースをトレース可能にする
+- 公式ドキュメント更新（Solidityリリースノート、Introduction to Smart Contracts）を四半期に一度確認し、ルール反映の有無を記録する

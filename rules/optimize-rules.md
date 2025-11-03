@@ -17,6 +17,8 @@
 - L2 / Rollup向けにはcalldata圧縮（`abi.encodePacked`・`RLP`）とバッチ処理を検討
 - ストレージ書き換え回数を減らすためにキャッシュ＋`SSTORE2`や`ImmutableArgs`等のパターンを比較
 - バイトコードサイズ（24KB制限）を監視し、ライブラリ化や`using for`で再利用する
+- EIP-1559料金（`baseFee`/`maxFee`/`priorityFee`）を前提に、`gasleft`の利用や返金（`SSTORE`ガスリファンド低減）を考慮した設計を行う
+- `selfdestruct`/`CREATE2`によるガス返金前提の最適化は廃止し、代替策を設計する
 
 ## ベストプラクティス
 ```solidity
@@ -29,6 +31,12 @@ struct PackedData {
     uint128 amount;
     uint64 lastUpdate;
     uint64 nonce;
+}
+
+function safeCall(address target, bytes memory data) internal returns (bytes memory) {
+    (bool ok, bytes memory ret) = target.call(data);
+    if (!ok) revert ExternalCallFailed();
+    return ret;
 }
 ```
 

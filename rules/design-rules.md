@@ -41,3 +41,11 @@
 ## デザインパターン
 - Factory / Registry / Proxy / Diamond / Pull Payment / Emergency Stop / Sequencer-Fault / Delayed-Upgrade / Timelock / Rate-Limit
 - 再利用可能な設計案には、メリット・デメリット・ガス影響・運用負荷・既知の攻撃ベクトルを添える
+- コントラクト生成パターン（`CREATE`/`CREATE2`）ではデプロイ時の初期コード・ランタイムコードの差異、サルト構成、アドレス事前計算、再デプロイ不可条件をドキュメント化する
+- Delegatecall/ライブラリ活用パターンではストレージ互換性、バージョン管理、ライブラリアドレス固定、初期化手順のテーブル化が必須
+
+## 設計ガイドライン（Solidity基礎対応）
+- データ領域（`storage`/`memory`/`calldata`/`transient`）の選択基準とコスト特性を設計書に明記する
+- Fallback/Receive関数の役割、支払い受付条件、`msg.data`取扱い、ガススタイペンド制限を整理し、最小限の責務に限定する
+- イベント設計では`indexed`数、トピック構造、監視・サブグラフ利用を考慮して命名・スキーマ化する
+- 自己破壊 (`selfdestruct`) は原則禁止とし、Legacyコントラクトに対する移行計画を定義する

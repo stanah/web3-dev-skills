@@ -16,6 +16,7 @@
 - セキュリティ: `rules/security-rules.md`
 - テスト: `rules/test-rules.md`
 - 最適化: `rules/optimize-rules.md`
+- 言語仕様: `docs/solidity-intro-crossref.md`
 
 ## 出力テンプレート
 1. **Context**: 対象コントラクト/モジュール、前提条件
@@ -27,3 +28,4 @@
 - 根拠のないセキュリティ判断
 - 既存ルールと矛盾する推奨
 - テストや解析を伴わないガス最適化提案
+- Solidity公式ドキュメントの更新無視。発見した場合は記録とタスク化を必須とする

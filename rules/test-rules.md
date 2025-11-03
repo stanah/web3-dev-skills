@@ -38,6 +38,9 @@ contract MyContractTest is Test {
 - オラクル・価格参照はスタブ値、遅延、異常値を含むテストを行い、ChainlinkやPyth等の仕様に合わせて検証する
 - アップグレード可能コントラクトは`setUp`で初期化→権限付与→アップグレード→ロールバックのシナリオを用意する
 - フォークテスト（`vm.createFork`）でメインネット／L2の実データに対する回帰を実施し、リリース前に最新ブロックで再検証する
+- `storage`/`memory`/`calldata`のデータ位置を変更する際は別々のテストで副作用とガス差分を検証する
+- Fallback/Receive/ローレベルコール（`call`/`delegatecall`/`staticcall`）の挙動をテストし、ガススタイペンドや戻り値を確認する
+- `CREATE2`や`selfdestruct`のLegacy挙動を再現テストで確認し、新規パスではrevertすることを保証する
 
 ## カバレッジ要求
 - ライン >= 95%、ブランチ >= 90%、ファンクション 100%

@@ -2,8 +2,9 @@
 
 ## 全体方針
 - 本プロジェクトはSolidityに特化したエージェント用ルールを管理する。カーソルアシスタントは`rules/`以下のMarkdownを参照し、タスクごとに適切な専門ルールを組み合わせること。
-- すべての提案・コード生成は`rules/base-rules.md`の原則に従い、EthTrust Security Levels v3やOWASP SCSTGの観点を踏まえてセキュリティ・ガス・保守性・運用性のトレードオフを明記する。
+- すべての提案・コード生成は`rules/base-rules.md`の原則に従い、EthTrust Security Levels v3やOWASP SCSTG、Solidity公式Introductionで示される言語仕様の観点を踏まえてセキュリティ・ガス・保守性・運用性のトレードオフを明記する。
 - 作業はTDD（Red→Green→Refactor）スタイルで進める。テストが存在しない場合は最小限の失敗テストを作成してから修正案を提示する。
+- 公式ドキュメント更新が疑われる場合は`docs/solidity-intro-crossref.md`を参照し、ギャップがあればIssue/タスク化する。
 
 ## ルール選択指針
 - 設計・仕様検討: `rules/design-rules.md`
