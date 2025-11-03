@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { hideBin } from 'yargs/helpers';
 import yargs from 'yargs/yargs';
-import { copyFileSync, existsSync, mkdirSync, readdirSync } from 'node:fs';
+import { copyFileSync, cpSync, existsSync, mkdirSync, readdirSync } from 'node:fs';
 import { basename, join, resolve } from 'node:path';
 import { homedir } from 'node:os';
 
@@ -46,9 +46,13 @@ function installCursorRules(targetDir?: string): void {
   }
 }
 
-function installAmazonQAgents(): void {
-  const sourceDir = join(projectRoot, '.amazon-q', 'cli-agents');
-  const destinationDir = join(homedir(), '.aws', 'amazonq', 'cli-agents');
+function installAmazonQAgents(targetDir?: string): void {
+  const sourceDir = join(projectRoot, '.amazonq', 'cli-agents');
+  // ディレクトリが指定されていない場合は、ホームディレクトリを使用（従来の動作）
+  // リポジトリに配置する場合は公式仕様に従い .amazonq/cli-agents/ を使用
+  const destinationDir = targetDir
+    ? join(resolve(targetDir), '.amazonq', 'cli-agents')
+    : join(homedir(), '.aws', 'amazonq', 'cli-agents');
   const timestamp = new Date().toISOString().replace(/[-:T]/g, '').replace(/\..+/, '');
 
   mkdirSync(destinationDir, { recursive: true });
@@ -56,6 +60,7 @@ function installAmazonQAgents(): void {
   const installed: string[] = [];
   const backups: string[] = [];
 
+  // エージェント定義ファイルをコピー
   for (const file of readdirSync(sourceDir)) {
     if (!file.startsWith('solidity-') || !file.endsWith('.json')) {
       continue;
@@ -73,6 +78,29 @@ function installAmazonQAgents(): void {
     copyFileSync(sourcePath, destinationPath);
     installed.push(destinationPath);
     console.log(`Installed ${sourcePath} -> ${destinationPath}`);
+  }
+
+  // ディレクトリ指定でインストールする場合、ルールファイルとドキュメントもコピー
+  // エージェント定義ファイルから ../rules/ を参照しているため、.amazonq/rules/ に配置
+  if (targetDir) {
+    const targetRoot = resolve(targetDir);
+    const amazonqDir = join(targetRoot, '.amazonq');
+    const rulesSource = join(projectRoot, 'rules');
+    const docsSource = join(projectRoot, 'docs');
+    const rulesDest = join(amazonqDir, 'rules');
+    const docsDest = join(amazonqDir, 'docs');
+
+    if (existsSync(rulesSource)) {
+      console.log(`Copying rules directory to ${rulesDest}...`);
+      cpSync(rulesSource, rulesDest, { recursive: true });
+      console.log(`  ✓ Copied rules directory`);
+    }
+
+    if (existsSync(docsSource)) {
+      console.log(`Copying docs directory to ${docsDest}...`);
+      cpSync(docsSource, docsDest, { recursive: true });
+      console.log(`  ✓ Copied docs directory`);
+    }
   }
 
   if (installed.length === 0) {
@@ -126,10 +154,16 @@ yargs(hideBin(process.argv))
     (amazonQYargs) =>
       amazonQYargs.command(
         'install',
-        'Copy Amazon Q CLI agent definitions to ~/.aws/amazonq/cli-agents',
-        () => {},
-        () => {
-          installAmazonQAgents();
+        'Copy Amazon Q CLI agent definitions to specified directory (default: ~/.aws/amazonq/cli-agents)',
+        (installYargs) =>
+          installYargs.option('dir', {
+            alias: 'd',
+            type: 'string',
+            description: 'Target directory to install .amazonq/cli-agents/ (default: ~/.aws/amazonq/cli-agents)',
+            demandOption: false,
+          }),
+        (argv) => {
+          installAmazonQAgents(argv.dir);
         },
       ),
   )

@@ -628,7 +628,7 @@ function getUser(address addr) external view returns (User storage) {
 |---------|------------|---------|-----------|
 | **Cursor** | `.cursorrules` | プロジェクトルートに配置 | ファイル単位のルール適用 |
 | **Claude Code** | Project Instructions | UI経由で設定 | MCPツール連携 |
-| **Amazon Q** | `.amazon-q/` | CLIコマンドで設定 | AWS統合 |
+| **Amazon Q** | `.amazonq/` | CLIコマンドで設定 | AWS統合 |
 | **GitHub Copilot** | `.github/copilot/` | リポジトリ設定 | GitHub統合 |
 | **Continue** | `.continue/config.json` | JSON設定 | カスタムプロバイダー |
 
@@ -657,7 +657,7 @@ Claude Codeは Project Instructions 機能を使用：
 
 ```bash
 # Amazon Q は workspace 設定を使用
-.amazon-q/
+.amazonq/
 ├── instructions.md    # ルールファイル
 ├── context.json      # コンテキスト設定
 └── tools.json        # ツール統合設定

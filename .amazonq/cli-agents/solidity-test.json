@@ -14,20 +14,20 @@
     "repo_status"
   ],
   "resources": [
-    "file://../rules/base-rules.md",
-    "file://../rules/test-rules.md",
-    "file://../rules/dev-rules.md",
-    "file://../docs/solidity-intro-crossref.md"
+    "file://.amazonq/rules/base-rules.md",
+    "file://.amazonq/rules/test-rules.md",
+    "file://.amazonq/rules/dev-rules.md",
+    "file://.amazonq/docs/solidity-intro-crossref.md"
   ],
   "hooks": {},
   "toolsSettings": {
     "fs_read": {
       "allowedPaths": [
-        "../contracts/**/*",
-        "../src/**/*",
-        "../test/**/*",
-        "../rules/**/*",
-        "../docs/**/*"
+        "contracts/**/*",
+        "src/**/*",
+        "test/**/*",
+        ".amazonq/rules/**/*",
+        ".amazonq/docs/**/*"
       ]
     },
     "shell_readonly": {

@@ -13,15 +13,15 @@
     "repo_status"
   ],
   "resources": [
-    "file://../rules/base-rules.md",
-    "file://../docs/solidity-intro-crossref.md"
+    "file://.amazonq/rules/base-rules.md",
+    "file://.amazonq/docs/solidity-intro-crossref.md"
   ],
   "hooks": {},
   "toolsSettings": {
     "fs_read": {
       "allowedPaths": [
-        "../rules/**/*",
-        "../docs/**/*"
+        ".amazonq/rules/**/*",
+        ".amazonq/docs/**/*"
       ]
     }
   },
