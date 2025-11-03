@@ -16,9 +16,19 @@ fi
 mkdir -p "$DEST_DIR"
 
 copied=()
+backed_up=()
+timestamp=$(date +"%Y%m%d%H%M%S")
 while IFS= read -r -d '' file; do
   base_name=$(basename "$file")
-  cp "$file" "$DEST_DIR/$base_name"
+  dest_path="$DEST_DIR/$base_name"
+
+  if [[ -f "$dest_path" ]]; then
+    backup_path="${dest_path}.backup-${timestamp}"
+    cp "$dest_path" "$backup_path"
+    backed_up+=("$(basename "$backup_path")")
+  fi
+
+  cp "$file" "$dest_path"
   copied+=("$base_name")
 done < <(find "$SRC_DIR" -maxdepth 1 -type f -name "solidity-*.json" -print0)
 
@@ -32,6 +42,13 @@ printf "コピーされたファイル:\n"
 for name in "${copied[@]}"; do
   printf "  - %s\n" "$name"
 done
+
+if [[ ${#backed_up[@]} -gt 0 ]]; then
+  printf "\n上書き前にバックアップした既存ファイル:\n"
+  for name in "${backed_up[@]}"; do
+    printf "  - %s\n" "$name"
+  done
+fi
 
 cat <<'MSG'
 

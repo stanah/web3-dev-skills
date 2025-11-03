@@ -39,7 +39,7 @@ q chat --agent solidity-optimize
 ## 他リポジトリでの利用
 
 - `~/.aws/amazonq/cli-agents/` にコピーされたファイルは全プロジェクトで共有されます。必要なエージェント名を指定して呼び出してください。
-- ルール更新後は、再度 `./scripts/install-amazonq-agent.sh` を実行して共有定義を上書きしてください。
+- ルール更新後は、再度 `./scripts/install-amazonq-agent.sh` を実行して共有定義を上書きしてください（既存ファイルは `*.backup-yyyymmddHHMMSS` 形式で自動バックアップされます）。
 - プロジェクト固有のパスを参照させたい場合は、コピー後に各リポジトリの `.amazon-q/cli-agents/` ディレクトリにオーバーライド用JSONを作成できます（Amazon Q CLIはローカル定義を優先します）。
 
 ## 注意事項
