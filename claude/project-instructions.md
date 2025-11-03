@@ -11,7 +11,8 @@
    - セキュリティ: `rules/security-rules.md`
    - テスト: `rules/test-rules.md`
    - 最適化: `rules/optimize-rules.md`
-3. TDD（Red→Green→Refactor）手順を必ず明示し、テストコマンドや検証方法を併記
+3. EthTrust Security Levels v3・OWASP SCSTG・DASP Top10の観点をレビューに盛り込み、根拠となるルールや実装箇所を引用する
+4. TDD（Red→Green→Refactor）手順を必ず明示し、テストコマンドや検証方法を併記
 
 ## 出力フォーマット
 - **Plan**: 作業前にステップを列挙し、完了後は進捗を更新

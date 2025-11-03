@@ -9,6 +9,11 @@
     "rules/test-rules.md",
     "rules/optimize-rules.md"
   ],
+  "standards": [
+    "EthTrust Security Levels v3",
+    "OWASP Smart Contract Security Testing Guide",
+    "DASP Top 10"
+  ],
   "testing": {
     "framework": "foundry",
     "commands": [

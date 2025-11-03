@@ -4,7 +4,7 @@
 - Copilotによる補完・提案をSolidity特化ルールに合わせる
 
 ## ガイドライン
-- 生成コードは常に`rules/base-rules.md`を満たすこと
+- 生成コードは常に`rules/base-rules.md`を満たし、EthTrust Security Levels v3・OWASP SCSTGの観点を満たすこと
 - 実装タスクでは`rules/dev-rules.md`と`rules/security-rules.md`を併用
 - テスト生成では`rules/test-rules.md`を参照し、事前に失敗するテストを作成
 - ガス改善の提案は`rules/optimize-rules.md`に従い、測定コマンドを提示

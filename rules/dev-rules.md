@@ -8,7 +8,7 @@
 ## 推奨コードレイアウト
 ```solidity
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.30;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
@@ -43,13 +43,21 @@ contract Example is Ownable, ReentrancyGuard {
 - ストレージ変数をループで参照する際はメモリキャッシュを使用
 - `unchecked`は安全性が数学的に保証された箇所に限定
 - シグネチャの段階で`calldata`を活用し、入出力のガスコストを最適化
+- 可視性は`external`/`public`/`internal`/`private`を明示し、`pure`/`view`/`payable`の付け忘れを防止
+- `receive`/`fallback`は必要最小限とし、ガススタイペンドとイベント通知を検討
+- `abi.encodeWithSelector`でローレベルコールを行い、`bool success`と`returndata`を厳格に検証する
+- アセンブリ使用時は検証済み根拠と境界チェックをコメントに残し、代替手段が無い場合のみ許容
+- アップグレード可能コントラクトでは`initializer`/`reinitializer`管理とストレージギャップ調整を行う
 
 ## 典型的な実装パターン
 - Pull型の支払い処理
 - Meta-transaction対応（EIP-2771等）の場合はトラステッドフォワーダー検証を組み込む
 - ERC標準実装時はOpenZeppelinの実績を尊重しつつ、拡張部位だけを追記
+- クロスチェーンメッセージではリプレイ・順序・信頼境界を明示し、受信処理前にブリッジコントラクトの真正性を検証
+- オラクル連携では最新値スタンプ、許容遅延、サニティチェックを加える
 
 ## レビュー観点
 - CEI、アクセス制御、イベント発火、エラー処理が欠けていないかチェックリスト化
 - 設計ルールとの乖離があればコメントで理由を明示
-- テスト可能性を考虑し、難読化したロジックは避ける
+- テスト可能性を考虑し、難読化したロジックやグローバル状態依存を避ける
+- 静的解析（Slither、Mythril等）の指摘を精査し、根拠ある無視理由を記録する
