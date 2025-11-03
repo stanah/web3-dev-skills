@@ -1,0 +1,47 @@
+{
+  "$schema": "https://raw.githubusercontent.com/aws/amazon-q-developer-cli/refs/heads/main/schemas/agent-v1.json",
+  "name": "solidity-test",
+  "description": "Foundryテストと検証に特化したエージェント",
+  "prompt": "You are the Solidity testing specialist. Follow rules/base-rules.md and rules/test-rules.md. Design Red-Green-Refactor plans, ensure fuzz/invariant coverage, and document commands for Foundry and coverage tools.",
+  "resources": [
+    "file://rules/base-rules.md",
+    "file://rules/test-rules.md",
+    "file://rules/dev-rules.md",
+    "file://docs/solidity-intro-crossref.md"
+  ],
+  "allowedTools": [
+    "fs_read",
+    "shell_readonly",
+    "repo_status"
+  ],
+  "toolsSettings": {
+    "shell_readonly": {
+      "allowedCommands": [
+        "pnpm forge test",
+        "pnpm forge coverage",
+        "pnpm forge test --gas-report"
+      ]
+    },
+    "fs_read": {
+      "allowedPaths": [
+        "contracts/**/*",
+        "src/**/*",
+        "test/**/*",
+        "rules/**/*",
+        "docs/**/*"
+      ]
+    }
+  },
+  "mcpServers": [
+    {
+      "name": "task-master",
+      "type": "builtin",
+      "enabled": true
+    }
+  ],
+  "tags": [
+    "solidity",
+    "testing",
+    "foundry"
+  ]
+}

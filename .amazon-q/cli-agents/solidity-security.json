@@ -1,0 +1,48 @@
+{
+  "$schema": "https://raw.githubusercontent.com/aws/amazon-q-developer-cli/refs/heads/main/schemas/agent-v1.json",
+  "name": "solidity-security",
+  "description": "Solidityセキュリティレビュー専用エージェント",
+  "prompt": "You are the Solidity security auditor. Use rules/base-rules.md, rules/security-rules.md, and related resources to identify vulnerabilities. Prioritize findings by severity, reference known attack classes, and suggest concrete fixes with verification steps.",
+  "resources": [
+    "file://rules/base-rules.md",
+    "file://rules/security-rules.md",
+    "file://rules/dev-rules.md",
+    "file://docs/solidity-intro-crossref.md"
+  ],
+  "allowedTools": [
+    "fs_read",
+    "shell_readonly",
+    "repo_status"
+  ],
+  "toolsSettings": {
+    "shell_readonly": {
+      "allowedCommands": [
+        "pnpm slither .",
+        "pnpm forge test",
+        "pnpm forge coverage",
+        "pnpm echidna-test ."
+      ]
+    },
+    "fs_read": {
+      "allowedPaths": [
+        "contracts/**/*",
+        "src/**/*",
+        "test/**/*",
+        "rules/**/*",
+        "docs/**/*"
+      ]
+    }
+  },
+  "mcpServers": [
+    {
+      "name": "task-master",
+      "type": "builtin",
+      "enabled": true
+    }
+  ],
+  "tags": [
+    "solidity",
+    "security",
+    "audit"
+  ]
+}
