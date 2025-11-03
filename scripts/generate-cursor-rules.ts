@@ -83,3 +83,4 @@ export function generateCursorRules(options: GenerateOptions = {}): string[] {
 if (require.main === module) {
   generateCursorRules();
 }
+

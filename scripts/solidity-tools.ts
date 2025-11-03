@@ -9,22 +9,41 @@ import { generateCursorRules } from './generate-cursor-rules';
 
 const projectRoot = resolve(__dirname, '..');
 
-function installCursorRules(): void {
+function installCursorRules(targetDir?: string): void {
   const cursorRulesDir = join(projectRoot, '.cursor', 'rules');
-  const destinationDir = join(homedir(), '.cursor', 'rules');
+  // ディレクトリが指定されていない場合は、プロジェクトルートを使用
+  const destinationDir = targetDir
+    ? join(resolve(targetDir), '.cursor', 'rules')
+    : join(projectRoot, '.cursor', 'rules');
 
   console.log('Generating Cursor rule files...');
   const generatedFiles = generateCursorRules({ projectRoot, outputDir: cursorRulesDir });
 
   mkdirSync(destinationDir, { recursive: true });
 
+  const installed: string[] = [];
+  const overwritten: string[] = [];
+
   for (const filePath of generatedFiles) {
     const destPath = join(destinationDir, basename(filePath));
+
+    if (existsSync(destPath)) {
+      overwritten.push(basename(filePath));
+    }
+
     copyFileSync(filePath, destPath);
-    console.log(`Installed ${filePath} -> ${destPath}`);
+    installed.push(basename(filePath));
+    console.log(`Installed ${basename(filePath)} -> ${destPath}`);
   }
 
-  console.log(`Cursor rule pack installed under ${destinationDir}`);
+  console.log(`\nCursor rule pack installed under ${destinationDir}`);
+  console.log(`Installed ${installed.length} rule file(s):`);
+  installed.forEach((name) => console.log(`  - ${name}`));
+
+  if (overwritten.length > 0) {
+    console.log(`\nOverwritten existing file(s):`);
+    overwritten.forEach((name) => console.log(`  - ${name}`));
+  }
 }
 
 function installAmazonQAgents(): void {
@@ -87,10 +106,16 @@ yargs(hideBin(process.argv))
         )
         .command(
           'install',
-          'Generate and copy Cursor rule files to ~/.cursor/rules',
-          () => {},
-          () => {
-            installCursorRules();
+          'Generate and copy Cursor rule files to specified directory (default: project root)',
+          (installYargs) =>
+            installYargs.option('dir', {
+              alias: 'd',
+              type: 'string',
+              description: 'Target directory to install .cursor/rules/ (default: project root)',
+              demandOption: false,
+            }),
+          (argv) => {
+            installCursorRules(argv.dir);
           },
         )
         .demandCommand(),
@@ -112,3 +137,4 @@ yargs(hideBin(process.argv))
   .strict()
   .help()
   .parse();
+
