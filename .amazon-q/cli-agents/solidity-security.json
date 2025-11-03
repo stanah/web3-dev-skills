@@ -9,7 +9,12 @@
     "file://../rules/dev-rules.md",
     "file://../docs/solidity-intro-crossref.md"
   ],
-  "tools": {
+  "allowedTools": [
+    "fs_read",
+    "shell_readonly",
+    "repo_status"
+  ],
+  "toolsSettings": {
     "fs_read": {
       "allowedPaths": [
         "../contracts/**/*",
@@ -26,8 +31,7 @@
         "pnpm forge coverage",
         "pnpm echidna-test ."
       ]
-    },
-    "repo_status": {}
+    }
   },
   "mcpServers": [
     {

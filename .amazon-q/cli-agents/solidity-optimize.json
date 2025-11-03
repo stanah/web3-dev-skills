@@ -9,7 +9,12 @@
     "file://../rules/dev-rules.md",
     "file://../docs/solidity-intro-crossref.md"
   ],
-  "tools": {
+  "allowedTools": [
+    "fs_read",
+    "shell_readonly",
+    "repo_status"
+  ],
+  "toolsSettings": {
     "fs_read": {
       "allowedPaths": [
         "../contracts/**/*",
@@ -24,8 +29,7 @@
         "pnpm forge test --gas-report",
         "pnpm forge snapshot"
       ]
-    },
-    "repo_status": {}
+    }
   },
   "mcpServers": [
     {
