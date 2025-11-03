@@ -7,17 +7,14 @@
     "file://../rules/base-rules.md",
     "file://../docs/solidity-intro-crossref.md"
   ],
-  "allowedTools": [
-    "fs_read",
-    "repo_status"
-  ],
-  "toolsSettings": {
+  "tools": {
     "fs_read": {
       "allowedPaths": [
-        "rules/**/*",
-        "docs/**/*"
+        "../rules/**/*",
+        "../docs/**/*"
       ]
-    }
+    },
+    "repo_status": {}
   },
   "mcpServers": [
     {
