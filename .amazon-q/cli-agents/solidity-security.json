@@ -4,10 +4,10 @@
   "description": "Solidityセキュリティレビュー専用エージェント",
   "prompt": "You are the Solidity security auditor. Use rules/base-rules.md, rules/security-rules.md, and related resources to identify vulnerabilities. Prioritize findings by severity, reference known attack classes, and suggest concrete fixes with verification steps.",
   "resources": [
-    "file://rules/base-rules.md",
-    "file://rules/security-rules.md",
-    "file://rules/dev-rules.md",
-    "file://docs/solidity-intro-crossref.md"
+    "file://../rules/base-rules.md",
+    "file://../rules/security-rules.md",
+    "file://../rules/dev-rules.md",
+    "file://../docs/solidity-intro-crossref.md"
   ],
   "allowedTools": [
     "fs_read",

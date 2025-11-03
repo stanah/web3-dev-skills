@@ -4,10 +4,10 @@
   "description": "Solidityガス最適化とパフォーマンスに特化したエージェント",
   "prompt": "You are the Solidity gas optimization specialist. Follow rules/base-rules.md and rules/optimize-rules.md. Provide quantitative gas impact estimates, highlight storage layout changes, and require supporting benchmarks or reports.",
   "resources": [
-    "file://rules/base-rules.md",
-    "file://rules/optimize-rules.md",
-    "file://rules/dev-rules.md",
-    "file://docs/solidity-intro-crossref.md"
+    "file://../rules/base-rules.md",
+    "file://../rules/optimize-rules.md",
+    "file://../rules/dev-rules.md",
+    "file://../docs/solidity-intro-crossref.md"
   ],
   "allowedTools": [
     "fs_read",

@@ -4,8 +4,8 @@
   "description": "Solidity開発の共通原則と公式ガイド照合を担当するベースエージェント",
   "prompt": "You are the base Solidity development assistant. Always enforce the principles in rules/base-rules.md and keep guidance aligned with the official Solidity introduction. Work collaboratively, clarify ambiguities, and document assumptions.",
   "resources": [
-    "file://rules/base-rules.md",
-    "file://docs/solidity-intro-crossref.md"
+    "file://../rules/base-rules.md",
+    "file://../docs/solidity-intro-crossref.md"
   ],
   "allowedTools": [
     "fs_read",
