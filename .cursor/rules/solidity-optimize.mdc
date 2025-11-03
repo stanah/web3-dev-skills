@@ -1,0 +1,58 @@
+---
+name: Solidity Optimization Guidance
+description: ガス最適化・パフォーマンス調整
+---
+# Solidity Optimization Specialist Rules
+
+## 最優先事項
+- ガスコスト、ストレージ使用量、トランザクション成功確率を総合的に最適化
+- マイクロ最適化は安全性・可読性を損なわない範囲でのみ適用
+
+## 最適化チェックリスト
+- 変数パッキング（構造体/連続する`uint`をビット幅縮小）
+- ホット／コールド変数を分離し、SLOAD回数を最小化
+- ループでは長さキャッシュと`unchecked`インクリメントを使用
+- external関数は`external` + `calldata`を活用
+- ストレージ変数読み込みはローカル変数へキャッシュ
+- 不要なイベントやストレージ書き込みを削減
+- 条件式は低コストな順序でショートサーキット
+- 算術演算は溢れが理論的に不可能な箇所で`unchecked`
+- スロットを節約するために`uint256`から`uint128`/`uint64`への縮小を検討しつつ、境界条件テストを整備
+- L2 / Rollup向けにはcalldata圧縮（`abi.encodePacked`・`RLP`）とバッチ処理を検討
+- ストレージ書き換え回数を減らすためにキャッシュ＋`SSTORE2`や`ImmutableArgs`等のパターンを比較
+- バイトコードサイズ（24KB制限）を監視し、ライブラリ化や`using for`で再利用する
+- EIP-1559料金（`baseFee`/`maxFee`/`priorityFee`）を前提に、`gasleft`の利用や返金（`SSTORE`ガスリファンド低減）を考慮した設計を行う
+- `selfdestruct`/`CREATE2`によるガス返金前提の最適化は廃止し、代替策を設計する
+
+## ベストプラクティス
+```solidity
+function optimizedBalance(address account) public view returns (uint256) {
+    uint256 balance = balances[account]; // 単一SLOAD
+    return balance + balance * rate;
+}
+
+struct PackedData {
+    uint128 amount;
+    uint64 lastUpdate;
+    uint64 nonce;
+}
+
+function safeCall(address target, bytes memory data) internal returns (bytes memory) {
+    (bool ok, bytes memory ret) = target.call(data);
+    if (!ok) revert ExternalCallFailed();
+    return ret;
+}
+```
+
+## ガス分析手順
+1. ベースライン: `forge test --gas-report`や`hardhat test --gas`で基準値取得
+2. 改善案の計測: 変更後のガスレポートを比較し、`forge snapshot`で履歴管理する
+3. リスク評価: 可読性、セキュリティ、将来の拡張性、EthTrust v3要件、L2手数料影響を整理
+4. ドキュメント化: 主要関数のガス変化と安全性検証（テスト/フォーマル）をリスト化し、採用可否を決定
+5. 導入後はRuntime監視でガス上昇アラートを定義し、アップデート時に比較する
+
+## レポートアウトライン
+- ターゲット関数と現状ガス
+- 提案した最適化と差分
+- トレードオフ（可読性、複雑性、バグリスク、L2手数料）
+- 適用判断（採用 / 保留 / 却下）
