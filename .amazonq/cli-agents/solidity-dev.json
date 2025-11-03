@@ -26,8 +26,15 @@
         "contracts/**/*",
         "src/**/*",
         "test/**/*",
-        ".amazonq/rules/**/*",
-        ".amazonq/docs/**/*"
+        "**/contracts/**/*",
+        "**/src/**/*",
+        "**/test/**/*",
+        "packages/*/contracts/**/*",
+        "packages/*/src/**/*",
+        "packages/*/test/**/*",
+        "apps/*/contracts/**/*",
+        "apps/*/src/**/*",
+        "apps/*/test/**/*"
       ]
     },
     "shell_readonly": {

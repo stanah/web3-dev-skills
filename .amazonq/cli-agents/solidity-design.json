@@ -21,8 +21,18 @@
   "toolsSettings": {
     "fs_read": {
       "allowedPaths": [
-        ".amazonq/rules/**/*",
-        ".amazonq/docs/**/*"
+        "contracts/**/*",
+        "src/**/*",
+        "test/**/*",
+        "**/contracts/**/*",
+        "**/src/**/*",
+        "**/test/**/*",
+        "packages/*/contracts/**/*",
+        "packages/*/src/**/*",
+        "packages/*/test/**/*",
+        "apps/*/contracts/**/*",
+        "apps/*/src/**/*",
+        "apps/*/test/**/*"
       ]
     }
   },
