@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
 
 type RuleMapping = {
   source: string;
@@ -55,8 +54,7 @@ type GenerateOptions = {
 };
 
 export function generateCursorRules(options: GenerateOptions = {}): string[] {
-  const currentDir = fileURLToPath(new URL('.', import.meta.url));
-  const resolvedProjectRoot = options.projectRoot ?? resolve(currentDir, '..');
+  const resolvedProjectRoot = options.projectRoot ?? resolve(__dirname, '..');
   const resolvedOutputDir =
     options.outputDir ?? join(resolvedProjectRoot, '.cursor', 'rules');
 
@@ -82,7 +80,6 @@ export function generateCursorRules(options: GenerateOptions = {}): string[] {
   return generatedFiles;
 }
 
-const executedDirectly = process.argv[1] === fileURLToPath(import.meta.url);
-if (executedDirectly) {
+if (require.main === module) {
   generateCursorRules();
 }

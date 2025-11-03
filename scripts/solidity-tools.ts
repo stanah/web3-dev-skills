@@ -3,13 +3,11 @@ import { hideBin } from 'yargs/helpers';
 import yargs from 'yargs/yargs';
 import { copyFileSync, existsSync, mkdirSync, readdirSync } from 'node:fs';
 import { basename, join, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { homedir } from 'node:os';
 
-import { generateCursorRules } from './generate-cursor-rules.ts';
+import { generateCursorRules } from './generate-cursor-rules';
 
-const currentDir = fileURLToPath(new URL('.', import.meta.url));
-const projectRoot = resolve(currentDir, '..');
+const projectRoot = resolve(__dirname, '..');
 
 function installCursorRules(): void {
   const cursorRulesDir = join(projectRoot, '.cursor', 'rules');
@@ -74,29 +72,41 @@ yargs(hideBin(process.argv))
   .scriptName('solidity-tools')
   .usage('$0 <command> [options]')
   .command(
-    'cursor generate',
-    'Generate Cursor rule files inside the repository',
-    () => {},
-    () => {
-      const generated = generateCursorRules({ projectRoot });
-      console.log(`Generated ${generated.length} Cursor rule file(s).`);
-    },
+    'cursor',
+    'Manage Cursor rule pack',
+    (cursorYargs) =>
+      cursorYargs
+        .command(
+          'generate',
+          'Generate Cursor rule files inside the repository',
+          () => {},
+          () => {
+            const generated = generateCursorRules({ projectRoot });
+            console.log(`Generated ${generated.length} Cursor rule file(s).`);
+          },
+        )
+        .command(
+          'install',
+          'Generate and copy Cursor rule files to ~/.cursor/rules',
+          () => {},
+          () => {
+            installCursorRules();
+          },
+        )
+        .demandCommand(),
   )
   .command(
-    'cursor install',
-    'Generate and copy Cursor rule files to ~/.cursor/rules',
-    () => {},
-    () => {
-      installCursorRules();
-    },
-  )
-  .command(
-    'amazonq install',
-    'Copy Amazon Q CLI agent definitions to ~/.aws/amazonq/cli-agents',
-    () => {},
-    () => {
-      installAmazonQAgents();
-    },
+    'amazonq',
+    'Manage Amazon Q CLI agents',
+    (amazonQYargs) =>
+      amazonQYargs.command(
+        'install',
+        'Copy Amazon Q CLI agent definitions to ~/.aws/amazonq/cli-agents',
+        () => {},
+        () => {
+          installAmazonQAgents();
+        },
+      ),
   )
   .demandCommand()
   .strict()
