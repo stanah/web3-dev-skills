@@ -1,0 +1,22 @@
+{
+  "name": "solidity-agent-tools",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "solidity-tools": "tsx scripts/solidity-tools.ts",
+    "cursor:generate": "tsx scripts/solidity-tools.ts cursor generate",
+    "cursor:install": "tsx scripts/solidity-tools.ts cursor install",
+    "amazonq:install": "tsx scripts/solidity-tools.ts amazonq install"
+  },
+  "packageManager": "pnpm@10.20.0+sha512.cf9998222162dd85864d0a8102e7892e7ba4ceadebbf5a31f9c2fce48dfce317a9c53b9f6464d1ef9042cba2e02ae02a9f7c143a2b438cd93c91840f0192b9dd",
+  "devDependencies": {
+    "@types/node": "^22.7.5",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "yargs": "^17.7.2"
+  }
+}

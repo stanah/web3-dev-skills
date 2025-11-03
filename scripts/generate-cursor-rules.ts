@@ -1,13 +1,16 @@
 #!/usr/bin/env node
-const { readFileSync, writeFileSync, mkdirSync } = require('fs');
-const { join, resolve } = require('path');
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const projectRoot = resolve(__dirname, '..');
-const cursorRulesDir = join(projectRoot, '.cursor', 'rules');
+type RuleMapping = {
+  source: string;
+  target: string;
+  name: string;
+  description: string;
+};
 
-mkdirSync(cursorRulesDir, { recursive: true });
-
-const mapping = [
+const mapping: RuleMapping[] = [
   {
     source: 'rules/base-rules.md',
     target: 'solidity-base.mdc',
@@ -46,9 +49,40 @@ const mapping = [
   },
 ];
 
-for (const { source, target, name, description } of mapping) {
-  const content = readFileSync(join(projectRoot, source), 'utf8');
-  const output = `---\nname: ${name}\ndescription: ${description}\n---\n${content}`;
-  writeFileSync(join(cursorRulesDir, target), output);
-  console.log(`Generated ${target} from ${source}`);
+type GenerateOptions = {
+  projectRoot?: string;
+  outputDir?: string;
+};
+
+export function generateCursorRules(options: GenerateOptions = {}): string[] {
+  const currentDir = fileURLToPath(new URL('.', import.meta.url));
+  const resolvedProjectRoot = options.projectRoot ?? resolve(currentDir, '..');
+  const resolvedOutputDir =
+    options.outputDir ?? join(resolvedProjectRoot, '.cursor', 'rules');
+
+  mkdirSync(resolvedOutputDir, { recursive: true });
+
+  const generatedFiles: string[] = [];
+
+  for (const mappingEntry of mapping) {
+    const content = readFileSync(join(resolvedProjectRoot, mappingEntry.source), 'utf8');
+    const output = [
+      '---',
+      `name: ${mappingEntry.name}`,
+      `description: ${mappingEntry.description}`,
+      '---',
+      content,
+    ].join('\n');
+
+    writeFileSync(join(resolvedOutputDir, mappingEntry.target), output);
+    console.log(`Generated ${mappingEntry.target} from ${mappingEntry.source}`);
+    generatedFiles.push(join(resolvedOutputDir, mappingEntry.target));
+  }
+
+  return generatedFiles;
+}
+
+const executedDirectly = process.argv[1] === fileURLToPath(import.meta.url);
+if (executedDirectly) {
+  generateCursorRules();
 }

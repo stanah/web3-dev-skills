@@ -6,10 +6,11 @@
 
 1. Amazon Q Developer CLI を最新化します。`q version` でバージョンを確認し、0.67.0 以上であることを確認してください。
 2. 本リポジトリをクローン（または更新）します。
-3. 以下のスクリプトを実行すると、ホームディレクトリの共有パス `~/.aws/amazonq/cli-agents/` にエージェント定義がまとめてコピーされます。
+3. 依存をセットアップしてカスタムエージェントをコピーします。
 
 ```bash
-./scripts/install-amazonq-agent.sh
+pnpm install    # 初回のみ
+pnpm amazonq:install
 ```
 
 4. 任意のプロジェクトで、次のコマンドでエージェントを起動できます。
@@ -39,7 +40,7 @@ q chat --agent solidity-optimize
 ## 他リポジトリでの利用
 
 - `~/.aws/amazonq/cli-agents/` にコピーされたファイルは全プロジェクトで共有されます。必要なエージェント名を指定して呼び出してください。
-- ルール更新後は、再度 `./scripts/install-amazonq-agent.sh` を実行して共有定義を上書きしてください（既存ファイルは `*.backup-yyyymmddHHMMSS` 形式で自動バックアップされます）。
+- ルール更新後は、再度 `pnpm amazonq:install` を実行して共有定義を上書きしてください。
 - プロジェクト固有のパスを参照させたい場合は、コピー後に各リポジトリの `.amazon-q/cli-agents/` ディレクトリにオーバーライド用JSONを作成できます（Amazon Q CLIはローカル定義を優先します）。
 
 ## 注意事項
