@@ -1,2 +1,7 @@
 node_modules/
 dist/
+
+# Data collection
+data/
+bigquery-queries/
+data-collection-config.json
