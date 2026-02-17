@@ -29,6 +29,12 @@ You are generating the final audit report from SPECA pipeline artifacts. This pr
 16. Read `.speca/test-results.json` using the Read tool.
 17. If the file does not exist, set an internal flag `has_test_results = false` and continue silently (test results are optional).
 18. If the file exists, parse the JSON and extract the `test_files` array. Set `has_test_results = true`.
+19. Read `.speca/cross-findings.json` using the Read tool.
+20. If the file does not exist, set an internal flag `has_cross_findings = false` and continue silently (cross-implementation findings are optional).
+21. If the file exists, parse the JSON and extract the `cross_findings` array and `cross_findings_by_severity`. Set `has_cross_findings = true`.
+22. Read `.speca/graph.json` using the Read tool.
+23. If the file does not exist, set an internal flag `has_graph = false` and continue silently (program graph is optional).
+24. If the file exists, parse the JSON and extract `structural_analysis`. Set `has_graph = true`.
 
 ---
 
@@ -239,11 +245,45 @@ Tests were generated but not executed. Run `forge test --match-path test/speca/ 
 ```
 
 ```markdown
+## Cross-Implementation Findings
+```
+
+Include this section only if `has_cross_findings` is true:
+
+```markdown
+The following vulnerabilities were identified by propagating primary findings across alternative implementations (Strategy B).
+
+| ID        | Severity | Match Type | Target | Title |
+|-----------|----------|------------|--------|-------|
+| XFIND-NNN | severity | CONFIRMED/VARIANT/MITIGATED | target_path | title |
+```
+
+For each cross-finding, print a row. Then for each CONFIRMED or VARIANT finding, include the full detail block (same format as primary findings: description, proof trace, recommendation). MITIGATED findings should be listed in summary only with a note about what mitigation exists.
+
+```markdown
+## Program Graph Analysis
+```
+
+Include this section only if `has_graph` is true:
+
+```markdown
+### Structural Analysis Summary
+
+- **Critical paths** (untrusted actor → high-value asset): <N>
+- **State dependency clusters**: <N>
+- **Orphan actions** (no actor specified): <N>
+- **Orphan assets** (no action targets): <N>
+- **Disconnected requirements**: <N>
+```
+
+If there are orphan actions or disconnected requirements, list them as they indicate specification gaps.
+
+```markdown
 ## Methodology
 
 This audit was performed using the SPECA (SPEcification-to-Checklist Auditing) framework v1.0.
 
-**Pipeline:** `/speca-init` -> `/speca-extract` -> `/speca-map` -> `/speca-checklist` -> `/speca-audit` -> `/speca-test` -> `/speca-report`
+**Pipeline:** `/speca-init` -> `/speca-extract` -> `/speca-graph` (optional) -> `/speca-map` -> `/speca-checklist` -> `/speca-audit` -> `/speca-test` -> `/speca-cross` (optional) -> `/speca-report`
 
 **Reference:** [SPECA: Scalable LLM-Driven Specification-to-Checklist Auditing of Smart Contracts](https://arxiv.org/abs/2602.07513)
 ```
