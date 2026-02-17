@@ -24,7 +24,7 @@ You are generating a property-based security checklist from extracted requiremen
 
 ## Inline Vulnerability Pattern Database (v1.0)
 
-The following vulnerability patterns are the core knowledge base for this skill. Each pattern has an ID, description, what to check, and severity. Use these patterns when matching against mapped code to generate check items. Do NOT load patterns from external files; use this database exactly as specified.
+The following vulnerability patterns are the core knowledge base for this command. Each pattern has an ID, description, what to check, and severity. Use these patterns when matching against mapped code to generate check items. Do NOT load patterns from external files; use this database exactly as specified.
 
 ---
 
@@ -495,7 +495,7 @@ Only include pattern category rows that have a non-zero count.
 
 ## Notes
 
-- This skill is **non-interactive**. Do not prompt the user for input during checklist generation. Read the prerequisites, process all data, write the output, and print the summary.
+- This command is **non-interactive**. Do not prompt the user for input during checklist generation. Read the prerequisites, process all data, write the output, and print the summary.
 - All file paths in the output must be **relative** to the project root, matching the format in `config.json`.
 - The vulnerability pattern database is the core differentiator of SPECA. It surfaces vulnerability classes that specification authors may not have considered. Be thorough in pattern matching: read the actual code at mapped locations and evaluate each applicable pattern carefully.
 - When multiple patterns apply to the same code location, create separate check items for each pattern. Do not merge distinct vulnerability concerns into a single check.

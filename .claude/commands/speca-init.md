@@ -5,11 +5,11 @@ description: Initialize SPECA auditing project - creates .speca/ directory and c
 
 # /speca-init - SPECA Project Initialization
 
-You are initializing a SPECA (SPEcification-to-Checklist Auditing) project for Solidity smart contract security auditing. This skill interactively collects configuration from the user and generates the `.speca/config.json` file that all subsequent SPECA skills depend on.
+You are initializing a SPECA (SPEcification-to-Checklist Auditing) project for Solidity smart contract security auditing. This command interactively collects configuration from the user and generates the `.speca/config.json` file that all subsequent SPECA commands depend on.
 
 ## Overview
 
-This skill performs 5 phases:
+This command performs 5 phases:
 1. Collect specification file paths
 2. Collect Solidity source paths
 3. Define threat model (actors, boundaries, assumptions)
@@ -226,4 +226,4 @@ Next step: Run /speca-extract to extract requirements from your specification fi
 
 - All paths in config.json MUST be relative to the project root (start with `./`).
 - The threat model section is the most important part of initialization. Do not allow the user to skip it. At minimum, require one TRUSTED actor and one UNTRUSTED actor.
-- This config is consumed by all downstream SPECA skills: `/speca-extract`, `/speca-map`, `/speca-checklist`, `/speca-audit`, `/speca-test`, and `/speca-report`.
+- This config is consumed by all downstream SPECA commands: `/speca-extract`, `/speca-map`, `/speca-checklist`, `/speca-audit`, `/speca-test`, and `/speca-report`.

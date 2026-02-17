@@ -1,21 +1,21 @@
-# SPECA Skills Implementation Plan
+# SPECA Commands Implementation Plan
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
-**Goal:** Implement 7 Claude Code skills that form the SPECA (Specification-to-Checklist Auditing) pipeline for Solidity smart contract security auditing.
+**Goal:** Implement 7 Claude Code custom commands that form the SPECA (Specification-to-Checklist Auditing) pipeline for Solidity smart contract security auditing.
 
-**Architecture:** Each skill is a standalone `.md` file in `.claude/skills/` with frontmatter and structured instructions. Skills communicate via JSON artifacts in the `.speca/` directory. A sample project is included for end-to-end validation.
+**Architecture:** Each command is a standalone `.md` file in `.claude/commands/` with frontmatter and structured instructions. Commands communicate via JSON artifacts in the `.speca/` directory. A sample project is included for end-to-end validation.
 
-**Tech Stack:** Claude Code skills (Markdown), JSON artifact schemas, Solidity (sample), Foundry (sample tests)
+**Tech Stack:** Claude Code custom commands (Markdown), JSON artifact schemas, Solidity (sample), Foundry (sample tests)
 
-**Design Doc:** `docs/plans/2026-02-17-speca-skills-design.md`
+**Design Doc:** `docs/plans/2026-02-17-speca-commands-design.md`
 
 ---
 
-### Task 1: Create skill directory and sample project scaffold
+### Task 1: Create command directory and sample project scaffold
 
 **Files:**
-- Create: `.claude/skills/` (directory)
+- Create: `.claude/commands/` (directory)
 - Create: `examples/simple-vault/docs/spec.md`
 - Create: `examples/simple-vault/docs/interface.yaml`
 - Create: `examples/simple-vault/contracts/Vault.sol`
@@ -23,7 +23,7 @@
 **Step 1: Create directory structure**
 
 ```bash
-mkdir -p .claude/skills
+mkdir -p .claude/commands
 mkdir -p examples/simple-vault/docs
 mkdir -p examples/simple-vault/contracts
 ```
@@ -182,27 +182,27 @@ contract Vault {
 **Step 5: Commit**
 
 ```bash
-git add .claude/skills examples/
-git commit -m "feat: add skill directory and sample vault project for SPECA testing"
+git add .claude/commands examples/
+git commit -m "feat: add command directory and sample vault project for SPECA testing"
 ```
 
 ---
 
-### Task 2: Implement `/speca-init` skill
+### Task 2: Implement `/speca-init` command
 
 **Files:**
-- Create: `.claude/skills/speca-init.md`
+- Create: `.claude/commands/speca-init.md`
 
-**Step 1: Write the skill file**
+**Step 1: Write the command file**
 
-Create `.claude/skills/speca-init.md` with:
+Create `.claude/commands/speca-init.md` with:
 - Frontmatter (name, description)
 - Purpose section
 - Interactive flow for collecting spec paths, source paths, threat model
 - config.json generation logic
 - Validation that paths exist
 
-Key instructions the skill must encode:
+Key instructions the command must encode:
 1. Ask user for spec file paths (md/yaml)
 2. Ask user for Solidity source paths
 3. Ask user to define actors and trust levels (TRUSTED/SEMI_TRUSTED/UNTRUSTED)
@@ -212,30 +212,30 @@ Key instructions the skill must encode:
 7. Write `config.json`
 8. Print summary of configuration
 
-**Step 2: Verify skill file is well-formed**
+**Step 2: Verify command file is well-formed**
 
 ```bash
-head -5 .claude/skills/speca-init.md
+head -5 .claude/commands/speca-init.md
 # Verify frontmatter is present and correct
 ```
 
 **Step 3: Commit**
 
 ```bash
-git add .claude/skills/speca-init.md
-git commit -m "feat: add /speca-init skill for project setup"
+git add .claude/commands/speca-init.md
+git commit -m "feat: add /speca-init command for project setup"
 ```
 
 ---
 
-### Task 3: Implement `/speca-extract` skill
+### Task 3: Implement `/speca-extract` command
 
 **Files:**
-- Create: `.claude/skills/speca-extract.md`
+- Create: `.claude/commands/speca-extract.md`
 
-**Step 1: Write the skill file**
+**Step 1: Write the command file**
 
-Create `.claude/skills/speca-extract.md` with:
+Create `.claude/commands/speca-extract.md` with:
 - Frontmatter (name, description)
 - Prerequisites check (config.json must exist)
 - File format detection logic (md vs yaml by extension)
@@ -246,29 +246,29 @@ Create `.claude/skills/speca-extract.md` with:
 - Output schema definition for `requirements.json`
 - Instruction to write result to `.speca/requirements.json`
 
-**Step 2: Verify skill file is well-formed**
+**Step 2: Verify command file is well-formed**
 
 ```bash
-head -5 .claude/skills/speca-extract.md
+head -5 .claude/commands/speca-extract.md
 ```
 
 **Step 3: Commit**
 
 ```bash
-git add .claude/skills/speca-extract.md
-git commit -m "feat: add /speca-extract skill for requirement extraction"
+git add .claude/commands/speca-extract.md
+git commit -m "feat: add /speca-extract command for requirement extraction"
 ```
 
 ---
 
-### Task 4: Implement `/speca-map` skill
+### Task 4: Implement `/speca-map` command
 
 **Files:**
-- Create: `.claude/skills/speca-map.md`
+- Create: `.claude/commands/speca-map.md`
 
-**Step 1: Write the skill file**
+**Step 1: Write the command file**
 
-Create `.claude/skills/speca-map.md` with:
+Create `.claude/commands/speca-map.md` with:
 - Frontmatter (name, description)
 - Prerequisites check (requirements.json must exist)
 - Solidity source parsing instructions: identify functions, modifiers, events, state variables, inheritance
@@ -280,29 +280,29 @@ Create `.claude/skills/speca-map.md` with:
 - Output schema definition for `mapping.json`
 - Instruction to write result to `.speca/mapping.json`
 
-**Step 2: Verify skill file is well-formed**
+**Step 2: Verify command file is well-formed**
 
 ```bash
-head -5 .claude/skills/speca-map.md
+head -5 .claude/commands/speca-map.md
 ```
 
 **Step 3: Commit**
 
 ```bash
-git add .claude/skills/speca-map.md
-git commit -m "feat: add /speca-map skill for implementation mapping"
+git add .claude/commands/speca-map.md
+git commit -m "feat: add /speca-map command for implementation mapping"
 ```
 
 ---
 
-### Task 5: Implement `/speca-checklist` skill
+### Task 5: Implement `/speca-checklist` command
 
 **Files:**
-- Create: `.claude/skills/speca-checklist.md`
+- Create: `.claude/commands/speca-checklist.md`
 
-**Step 1: Write the skill file**
+**Step 1: Write the command file**
 
-Create `.claude/skills/speca-checklist.md` with:
+Create `.claude/commands/speca-checklist.md` with:
 - Frontmatter (name, description)
 - Prerequisites check (requirements.json + mapping.json must exist)
 - Inline Solidity vulnerability pattern database (all 10 categories from design doc):
@@ -324,29 +324,29 @@ Create `.claude/skills/speca-checklist.md` with:
 - Output schema definition for `checklist.json`
 - Instruction to write result to `.speca/checklist.json`
 
-**Step 2: Verify skill file is well-formed**
+**Step 2: Verify command file is well-formed**
 
 ```bash
-head -5 .claude/skills/speca-checklist.md
+head -5 .claude/commands/speca-checklist.md
 ```
 
 **Step 3: Commit**
 
 ```bash
-git add .claude/skills/speca-checklist.md
-git commit -m "feat: add /speca-checklist skill with Solidity vulnerability patterns"
+git add .claude/commands/speca-checklist.md
+git commit -m "feat: add /speca-checklist command with Solidity vulnerability patterns"
 ```
 
 ---
 
-### Task 6: Implement `/speca-audit` skill
+### Task 6: Implement `/speca-audit` command
 
 **Files:**
-- Create: `.claude/skills/speca-audit.md`
+- Create: `.claude/commands/speca-audit.md`
 
-**Step 1: Write the skill file**
+**Step 1: Write the command file**
 
-Create `.claude/skills/speca-audit.md` with:
+Create `.claude/commands/speca-audit.md` with:
 - Frontmatter (name, description)
 - Prerequisites check (checklist.json must exist)
 - Load threat model from config.json
@@ -362,29 +362,29 @@ Create `.claude/skills/speca-audit.md` with:
 - Output schema definition for `findings.json`
 - Instruction to write result to `.speca/findings.json`
 
-**Step 2: Verify skill file is well-formed**
+**Step 2: Verify command file is well-formed**
 
 ```bash
-head -5 .claude/skills/speca-audit.md
+head -5 .claude/commands/speca-audit.md
 ```
 
 **Step 3: Commit**
 
 ```bash
-git add .claude/skills/speca-audit.md
-git commit -m "feat: add /speca-audit skill for static audit (Strategy A)"
+git add .claude/commands/speca-audit.md
+git commit -m "feat: add /speca-audit command for static audit (Strategy A)"
 ```
 
 ---
 
-### Task 7: Implement `/speca-test` skill
+### Task 7: Implement `/speca-test` command
 
 **Files:**
-- Create: `.claude/skills/speca-test.md`
+- Create: `.claude/commands/speca-test.md`
 
-**Step 1: Write the skill file**
+**Step 1: Write the command file**
 
-Create `.claude/skills/speca-test.md` with:
+Create `.claude/commands/speca-test.md` with:
 - Frontmatter (name, description)
 - Prerequisites check (checklist.json + findings.json must exist, Foundry recommended)
 - Filter checklist for items with check_type "dynamic" or findings needing reproduction
@@ -398,29 +398,29 @@ Create `.claude/skills/speca-test.md` with:
 - If Foundry is not available, still generate test files with a note
 - Output: test files in project's test directory
 
-**Step 2: Verify skill file is well-formed**
+**Step 2: Verify command file is well-formed**
 
 ```bash
-head -5 .claude/skills/speca-test.md
+head -5 .claude/commands/speca-test.md
 ```
 
 **Step 3: Commit**
 
 ```bash
-git add .claude/skills/speca-test.md
-git commit -m "feat: add /speca-test skill for dynamic test generation (Strategy C)"
+git add .claude/commands/speca-test.md
+git commit -m "feat: add /speca-test command for dynamic test generation (Strategy C)"
 ```
 
 ---
 
-### Task 8: Implement `/speca-report` skill
+### Task 8: Implement `/speca-report` command
 
 **Files:**
-- Create: `.claude/skills/speca-report.md`
+- Create: `.claude/commands/speca-report.md`
 
-**Step 1: Write the skill file**
+**Step 1: Write the command file**
 
-Create `.claude/skills/speca-report.md` with:
+Create `.claude/commands/speca-report.md` with:
 - Frontmatter (name, description)
 - Prerequisites check (findings.json must exist)
 - Load all artifacts: requirements.json, mapping.json, checklist.json, findings.json
@@ -442,17 +442,17 @@ Create `.claude/skills/speca-report.md` with:
   - Map severity: critical/high -> "error", medium -> "warning", low/info -> "note"
 - Write both files to `.speca/reports/`
 
-**Step 2: Verify skill file is well-formed**
+**Step 2: Verify command file is well-formed**
 
 ```bash
-head -5 .claude/skills/speca-report.md
+head -5 .claude/commands/speca-report.md
 ```
 
 **Step 3: Commit**
 
 ```bash
-git add .claude/skills/speca-report.md
-git commit -m "feat: add /speca-report skill for Markdown and SARIF output"
+git add .claude/commands/speca-report.md
+git commit -m "feat: add /speca-report command for Markdown and SARIF output"
 ```
 
 ---
@@ -461,7 +461,7 @@ git commit -m "feat: add /speca-report skill for Markdown and SARIF output"
 
 **Files:**
 - Read: `examples/simple-vault/` (all files)
-- Read: `.claude/skills/speca-*.md` (all skills)
+- Read: `.claude/commands/speca-*.md` (all commands)
 
 **Step 1: Initialize SPECA for sample project**
 
@@ -507,17 +507,17 @@ git commit -m "test: validate SPECA pipeline with sample vault project"
 **Files:**
 - Modify: `README.md` (if exists) or create project-level docs
 
-**Step 1: Add skill usage documentation**
+**Step 1: Add command usage documentation**
 
 Add a section to the project describing:
-- Skill inventory (7 skills)
+- Command inventory (7 commands)
 - Quick start: `/speca-init` -> `/speca-extract` -> `/speca-map` -> `/speca-checklist` -> `/speca-audit` -> `/speca-report`
 - Artifact descriptions
-- Prerequisites (Claude Code with skill support)
+- Prerequisites (Claude Code with custom command support)
 
 **Step 2: Final commit**
 
 ```bash
 git add -A
-git commit -m "docs: add SPECA skills usage documentation"
+git commit -m "docs: add SPECA commands usage documentation"
 ```

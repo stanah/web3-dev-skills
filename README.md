@@ -1,4 +1,4 @@
-# SPECA Skills for Claude Code
+# SPECA Commands for Claude Code
 
 Solidity smart contract security auditing framework for Claude Code, based on the
 SPECA (SPEcification-to-Checklist Auditing) methodology.
@@ -7,7 +7,7 @@ SPECA (SPEcification-to-Checklist Auditing) methodology.
 
 ## Quick Start
 
-Run the skills in order inside Claude Code:
+Run the commands in order inside Claude Code:
 
 ```
 /speca-init        # Setup project, define threat model
@@ -19,12 +19,12 @@ Run the skills in order inside Claude Code:
 /speca-report      # Generate Markdown + SARIF reports
 ```
 
-Each skill reads the artifacts produced by previous steps from the `.speca/` directory.
+Each command reads the artifacts produced by previous steps from the `.speca/` directory.
 
-## Skill Inventory
+## Command Inventory
 
-| Skill | Phase | Description |
-|-------|-------|-------------|
+| Command | Phase | Description |
+|---------|-------|-------------|
 | `/speca-init` | Setup | Interactively collect spec paths, source paths, and threat model; write `.speca/config.json` |
 | `/speca-extract` | 1a - Extract | Parse Markdown (RFC 2119) and YAML specs into structured requirements |
 | `/speca-map` | 1b - Map | Map each requirement to Solidity source locations with confidence scoring |
@@ -67,7 +67,7 @@ for the expected schema.
 
 ## Requirements
 
-- **Claude Code** with custom skill support (`.claude/skills/` directory)
+- **Claude Code** with custom command support (`.claude/commands/` directory)
 - **Foundry** (optional) -- required only for `/speca-test` execution.
   Install from [https://getfoundry.sh](https://getfoundry.sh).
 

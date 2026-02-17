@@ -420,7 +420,7 @@ Next steps:
 
 ## Notes
 
-- This skill is **non-interactive**. Do not prompt the user for input during report generation. Read all prerequisites, generate both reports, and print the summary.
+- This command is **non-interactive**. Do not prompt the user for input during report generation. Read all prerequisites, generate both reports, and print the summary.
 - All file paths in the reports must be **relative** to the project root, matching the format used in `findings.json` and `mapping.json`.
 - The Markdown report is designed for human consumption: clear structure, severity-sorted findings, and actionable recommendations.
 - The SARIF report is designed for machine consumption: GitHub Code Scanning, IDE integrations, and CI/CD pipelines. It must be valid SARIF v2.1.0 JSON.

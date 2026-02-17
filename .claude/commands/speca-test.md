@@ -413,7 +413,7 @@ Next step: Run /speca-report to generate the full audit report.
 
 ## Notes
 
-- This skill is **non-interactive**. Do not prompt the user for input during test generation. Read all prerequisites, generate tests, optionally execute them, write the output, and print the summary.
+- This command is **non-interactive**. Do not prompt the user for input during test generation. Read all prerequisites, generate tests, optionally execute them, write the output, and print the summary.
 - All file paths in the output must be **relative** to the project root, matching the format in `config.json`.
 - Strategy C (test-based verification) was the least effective standalone strategy in the SPECA paper (5.9% of findings). However, PoC generation for confirmed findings is highly valuable for human reviewers because it provides executable proof that a vulnerability exists. The primary goal is to turn static findings into executable evidence, not to discover new findings through testing alone.
 - When generating PoC tests for findings, faithfully reproduce the attack scenario described in the finding's `proof_trace.reasoning`. The test should be a mechanical translation of the reasoning into Solidity test code.

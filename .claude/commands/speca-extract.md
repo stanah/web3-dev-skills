@@ -280,7 +280,7 @@ Only include type rows that have a non-zero count.
 
 ## Notes
 
-- This skill is **non-interactive**. Do not prompt the user for input during extraction. Read the config, process the files, write the output, and print the summary.
+- This command is **non-interactive**. Do not prompt the user for input during extraction. Read the config, process the files, write the output, and print the summary.
 - All file paths in the output must be **relative** to the project root, matching the format in `config.json`.
 - The quality of the downstream audit depends entirely on the completeness and accuracy of this extraction. Be thorough: scan every line of Markdown files and every field of YAML function definitions.
 - When in doubt about requirement classification, prefer `access_control` for anything about who can call what, `validation` for anything about input correctness, and `event_emission` for anything about events.

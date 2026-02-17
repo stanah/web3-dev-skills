@@ -396,7 +396,7 @@ Next steps:
 
 ## Notes
 
-- This skill is **non-interactive**. Do not prompt the user for input during the audit. Read all prerequisites, perform the audit, write the output, and print the summary.
+- This command is **non-interactive**. Do not prompt the user for input during the audit. Read all prerequisites, perform the audit, write the output, and print the summary.
 - All file paths in findings must be **relative** to the project root, matching the format in `config.json`.
 - When a single checklist item produces multiple findings (e.g., both a correctness issue and a completeness issue in the same function), create separate findings for each distinct issue. Do not merge unrelated issues.
 - When multiple checklist items point to the same code issue (e.g., several checks all flagging the same missing modifier), create one finding and reference all relevant checklist IDs in the description. Use the checklist ID of the most specific check as the primary `checklist_id`.

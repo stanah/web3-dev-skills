@@ -302,9 +302,9 @@ Next step: Run /speca-checklist to generate the audit checklist from the mapping
 
 ## Notes
 
-- This skill is **non-interactive**. Do not prompt the user for input during mapping. Read the config and requirements, process the source files, write the output, and print the summary.
+- This command is **non-interactive**. Do not prompt the user for input during mapping. Read the config and requirements, process the source files, write the output, and print the summary.
 - All file paths in the output must be **relative** to the project root, matching the format in `config.json`.
 - When a single requirement maps to multiple code locations (e.g., a modifier definition and all functions that use it), include all relevant locations sorted by confidence.
 - For inheritance hierarchies: if a function is defined in a parent contract but the requirement references a child contract, include the parent contract location as a candidate. Note in the evidence that the function is inherited.
 - Be conservative with confidence scores. It is better to slightly under-score a match than to over-score it. False high-confidence mappings are worse than false low-confidence ones because they cause the auditor to skip detailed review.
-- Unmapped requirements are the most valuable output of this skill. They highlight gaps between specification and implementation. Never suppress or downplay unmapped findings.
+- Unmapped requirements are the most valuable output of this command. They highlight gaps between specification and implementation. Never suppress or downplay unmapped findings.

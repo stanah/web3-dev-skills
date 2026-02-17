@@ -1,4 +1,4 @@
-# SPECA Skills Design - Solidity Specification-to-Checklist Auditing
+# SPECA Commands Design - Solidity Specification-to-Checklist Auditing
 
 **Date:** 2026-02-17
 **Status:** Approved
@@ -6,13 +6,13 @@
 
 ## Overview
 
-SPECA (SPEcification-to-Checklist Auditing) framework as a set of Claude Code skills for Solidity smart contract security auditing. The skills transform natural-language or structured specification documents into property-based checklists, map them to implementation locations, and perform systematic audits.
+SPECA (SPEcification-to-Checklist Auditing) framework as a set of Claude Code custom commands for Solidity smart contract security auditing. The commands transform natural-language or structured specification documents into property-based checklists, map them to implementation locations, and perform systematic audits.
 
 ### Key Design Decisions
 
 - **Solidity-focused**: Targets Solidity smart contracts with custom specification documents (not limited to ERC standards)
 - **Single-implementation primary**: Optimized for auditing one contract against its spec (Strategy A & C). Strategy B (cross-implementation) is deprioritized.
-- **Skill set architecture**: 7 independent skills with JSON artifact handoff via `.speca/` directory
+- **Command set architecture**: 7 independent commands with JSON artifact handoff via `.speca/` directory
 - **Dual output format**: Markdown reports + SARIF v2.1.0 for CI/CD integration
 - **Explicit threat model**: Learned from SPECA paper's finding that 56.8% of false positives came from threat model misalignment
 
@@ -53,10 +53,10 @@ Patterns (builtin) -+--> /speca-checklist --> checklist.json
       YYYY-MM-DD-report.sarif
 ```
 
-## Skill Inventory
+## Command Inventory
 
-| # | Skill | Phase | Input | Output |
-|---|-------|-------|-------|--------|
+| # | Command | Phase | Input | Output |
+|---|---------|-------|-------|--------|
 | 0 | `/speca-init` | Setup | Interactive | `.speca/config.json` |
 | 1 | `/speca-extract` | Phase 1a | Spec files (md/yaml) | `requirements.json` |
 | 2 | `/speca-map` | Phase 1b | requirements.json + *.sol | `mapping.json` |
@@ -65,10 +65,10 @@ Patterns (builtin) -+--> /speca-checklist --> checklist.json
 | 5 | `/speca-test` | Phase 2b (Strategy C) | checklist + findings + *.sol | Test files |
 | 6 | `/speca-report` | Output | findings + checklist + requirements | .md + .sarif |
 
-## Skill File Structure
+## Command File Structure
 
 ```
-.claude/skills/
+.claude/commands/
   speca-init.md
   speca-extract.md
   speca-map.md
@@ -78,7 +78,7 @@ Patterns (builtin) -+--> /speca-checklist --> checklist.json
   speca-report.md
 ```
 
-## Detailed Skill Designs
+## Detailed Command Designs
 
 ### 0. `/speca-init` - Project Setup
 
@@ -260,7 +260,7 @@ Patterns (builtin) -+--> /speca-checklist --> checklist.json
 
 ## Vulnerability Pattern Database
 
-Built-in Solidity-specific patterns embedded in `/speca-checklist` skill:
+Built-in Solidity-specific patterns embedded in `/speca-checklist` command:
 
 | Category | Example Patterns | Severity |
 |----------|-----------------|----------|
