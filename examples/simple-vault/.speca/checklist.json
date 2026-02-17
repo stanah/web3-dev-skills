@@ -1,0 +1,273 @@
+{
+  "generated_at": "2026-02-18T00:00:00Z",
+  "total_checks": 28,
+  "pattern_db_version": "1.0",
+  "summary": {
+    "by_priority": {
+      "critical": 4,
+      "high": 21,
+      "medium": 3,
+      "low": 0
+    },
+    "by_check_type": {
+      "static": 10,
+      "dynamic": 18
+    },
+    "unmapped_checks": 0,
+    "threat_model_exclusions": 0
+  },
+  "checklist": [
+    {
+      "id": "CHK-ACCESS-001-a",
+      "requirement_id": "R-AUTH-003",
+      "property": "deposit() is callable by any external address without whitelist or owner check, violating the requirement that only whitelisted addresses or the owner may call deposit(). Verify that a require(whitelist[msg.sender] || msg.sender == owner) guard or equivalent modifier is present.",
+      "check_type": "static",
+      "pattern_refs": ["ACCESS-001"],
+      "threat_model_filter": "external_caller -> deposit() is unrestricted, violating whitelist_or_owner boundary",
+      "priority": "critical"
+    },
+    {
+      "id": "CHK-ACCESS-001-b",
+      "requirement_id": "R-EMR-002",
+      "property": "emergencyUnpause() at line 45 is missing the onlyOwner modifier, allowing any external address to unpause the contract and re-enable deposits and withdrawals. Verify that onlyOwner modifier is applied to emergencyUnpause().",
+      "check_type": "static",
+      "pattern_refs": ["ACCESS-001"],
+      "threat_model_filter": "external_caller -> emergencyUnpause() is unrestricted, violating owner_only boundary",
+      "priority": "critical"
+    },
+    {
+      "id": "CHK-EXTCALL-001-a",
+      "requirement_id": "R-WDR-001",
+      "property": "withdraw() uses low-level .call{value: amount}('') at line 35. Verify that the boolean return value is checked with require(success) to prevent silent transfer failures.",
+      "check_type": "static",
+      "pattern_refs": ["EXTCALL-001"],
+      "threat_model_filter": "assumption: External calls via .call{} may trigger reentrant execution",
+      "priority": "critical"
+    },
+    {
+      "id": "CHK-REENT-001-a",
+      "requirement_id": "R-WDR-001",
+      "property": "withdraw() makes external call via .call{value: amount} at line 35 without updating any state variables (balances mapping is never decremented). This violates the checks-effects-interactions pattern and creates a reentrancy vector where the recipient can re-enter before state reflects the withdrawal.",
+      "check_type": "static",
+      "pattern_refs": ["REENT-001"],
+      "threat_model_filter": "assumption: External calls via .call{} may trigger reentrant execution",
+      "priority": "critical"
+    },
+    {
+      "id": "CHK-AUTH-001-a",
+      "requirement_id": "R-AUTH-001",
+      "property": "withdraw(amount) succeeds and transfers ETH when msg.sender == owner, paused == false, and amount <= address(this).balance.",
+      "check_type": "dynamic",
+      "pattern_refs": [],
+      "threat_model_filter": "contract_owner -> withdraw() owner_only access",
+      "priority": "high"
+    },
+    {
+      "id": "CHK-AUTH-001-b",
+      "requirement_id": "R-AUTH-001",
+      "property": "withdraw(amount) reverts with 'Not owner' when msg.sender != owner.",
+      "check_type": "dynamic",
+      "pattern_refs": [],
+      "threat_model_filter": "external_caller -> withdraw() must reject unauthorized callers",
+      "priority": "high"
+    },
+    {
+      "id": "CHK-AUTH-002-a",
+      "requirement_id": "R-AUTH-002",
+      "property": "addToWhitelist(addr) sets whitelist[addr] = true when msg.sender == owner, and removeFromWhitelist(addr) sets whitelist[addr] = false when msg.sender == owner.",
+      "check_type": "dynamic",
+      "pattern_refs": [],
+      "threat_model_filter": "contract_owner -> addToWhitelist()/removeFromWhitelist() owner_only access",
+      "priority": "high"
+    },
+    {
+      "id": "CHK-AUTH-002-b",
+      "requirement_id": "R-AUTH-002",
+      "property": "addToWhitelist(addr) and removeFromWhitelist(addr) revert with 'Not owner' when msg.sender != owner.",
+      "check_type": "dynamic",
+      "pattern_refs": [],
+      "threat_model_filter": "external_caller -> whitelist management must reject unauthorized callers",
+      "priority": "high"
+    },
+    {
+      "id": "CHK-AUTH-003-a",
+      "requirement_id": "R-AUTH-003",
+      "property": "deposit() succeeds when msg.sender is in the whitelist mapping and msg.value > 0.",
+      "check_type": "dynamic",
+      "pattern_refs": [],
+      "threat_model_filter": "whitelisted_depositor -> deposit() whitelist_or_owner access",
+      "priority": "high"
+    },
+    {
+      "id": "CHK-AUTH-003-b",
+      "requirement_id": "R-AUTH-003",
+      "property": "deposit() reverts when msg.sender is neither whitelisted nor owner, regardless of msg.value.",
+      "check_type": "dynamic",
+      "pattern_refs": [],
+      "threat_model_filter": "external_caller -> deposit() must reject unauthorized callers",
+      "priority": "high"
+    },
+    {
+      "id": "CHK-AUTH-004-a",
+      "requirement_id": "R-EMR-002",
+      "property": "emergencyPause() reverts when msg.sender != owner, and emergencyUnpause() reverts when msg.sender != owner.",
+      "check_type": "dynamic",
+      "pattern_refs": [],
+      "threat_model_filter": "external_caller -> pause/unpause must reject unauthorized callers",
+      "priority": "high"
+    },
+    {
+      "id": "CHK-DATA-001-a",
+      "requirement_id": "R-DEP-001",
+      "property": "deposit() increases balances[msg.sender] by exactly msg.value. Verify balances[msg.sender] after deposit equals balances[msg.sender] before deposit + msg.value.",
+      "check_type": "dynamic",
+      "pattern_refs": [],
+      "threat_model_filter": "whitelisted_depositor -> deposit() data integrity",
+      "priority": "high"
+    },
+    {
+      "id": "CHK-DATA-001-b",
+      "requirement_id": "R-DEP-001",
+      "property": "deposit() correctly handles multiple sequential deposits from the same address, accumulating balances without loss or overflow (protected by Solidity ^0.8.20).",
+      "check_type": "dynamic",
+      "pattern_refs": [],
+      "threat_model_filter": "assumption: Solidity ^0.8.20 — overflow protection built-in",
+      "priority": "high"
+    },
+    {
+      "id": "CHK-EVT-001-a",
+      "requirement_id": "R-DEP-003",
+      "property": "deposit() emits Deposited(msg.sender, msg.value) with correct indexed sender address and exact amount on every successful deposit.",
+      "check_type": "dynamic",
+      "pattern_refs": [],
+      "threat_model_filter": "whitelisted_depositor -> deposit() event emission",
+      "priority": "high"
+    },
+    {
+      "id": "CHK-EVT-002-a",
+      "requirement_id": "R-WDR-003",
+      "property": "withdraw(amount) emits Withdrawn(msg.sender, amount) with correct indexed recipient address and exact amount on every successful withdrawal.",
+      "check_type": "dynamic",
+      "pattern_refs": [],
+      "threat_model_filter": "contract_owner -> withdraw() event emission",
+      "priority": "high"
+    },
+    {
+      "id": "CHK-LCY-001-a",
+      "requirement_id": "R-EMR-001",
+      "property": "After emergencyPause() is called by the owner, both deposit() and withdraw() revert with 'Paused' for all callers.",
+      "check_type": "dynamic",
+      "pattern_refs": [],
+      "threat_model_filter": "contract_owner -> emergencyPause() lifecycle control",
+      "priority": "high"
+    },
+    {
+      "id": "CHK-LCY-001-b",
+      "requirement_id": "R-EMR-001",
+      "property": "emergencyPause() is idempotent — calling it when already paused succeeds without adverse effects or unexpected state changes.",
+      "check_type": "dynamic",
+      "pattern_refs": [],
+      "threat_model_filter": "contract_owner -> emergencyPause() lifecycle control",
+      "priority": "high"
+    },
+    {
+      "id": "CHK-LOGIC-001-a",
+      "requirement_id": "R-WDR-002",
+      "property": "withdraw() uses amount <= address(this).balance comparison, correctly matching the spec 'revert if amount exceeds the contract balance'. Verify the boundary: withdraw(address(this).balance) should succeed, withdraw(address(this).balance + 1) should revert.",
+      "check_type": "static",
+      "pattern_refs": ["LOGIC-001"],
+      "threat_model_filter": "contract_owner -> withdraw() boundary validation",
+      "priority": "high"
+    },
+    {
+      "id": "CHK-LOGIC-001-b",
+      "requirement_id": "R-DEP-002",
+      "property": "deposit() uses msg.value > 0 comparison, correctly matching the spec 'revert if msg.value is 0'. Verify the boundary: deposit with msg.value == 1 should succeed, deposit with msg.value == 0 should revert.",
+      "check_type": "static",
+      "pattern_refs": ["LOGIC-001"],
+      "threat_model_filter": "external_caller -> deposit() input validation",
+      "priority": "high"
+    },
+    {
+      "id": "CHK-REENT-001-b",
+      "requirement_id": "R-WDR-004",
+      "property": "withdraw() should perform all state variable updates (e.g., decrementing balances) BEFORE the external .call{value: amount} at line 35 to follow the checks-effects-interactions pattern. Currently no state update occurs at all.",
+      "check_type": "static",
+      "pattern_refs": ["REENT-001"],
+      "threat_model_filter": "assumption: External calls via .call{} may trigger reentrant execution",
+      "priority": "high"
+    },
+    {
+      "id": "CHK-REENT-002-a",
+      "requirement_id": "R-WDR-001",
+      "property": "During withdraw()'s external call at line 35, shared state variables (paused, balances, whitelist) can be read or modified by reentrant calls to deposit() or other functions. Verify that no cross-function reentrancy path leads to inconsistent state.",
+      "check_type": "dynamic",
+      "pattern_refs": ["REENT-002"],
+      "threat_model_filter": "contract_owner is TRUSTED — cross-function reentrancy requires owner's address to be a contract; downgraded from critical to high",
+      "priority": "high"
+    },
+    {
+      "id": "CHK-STATE-001-a",
+      "requirement_id": "R-WDR-001",
+      "property": "withdraw(amount) transfers exactly amount wei of ETH to msg.sender (the owner). Verify the owner's ETH balance increases by exactly amount after a successful withdrawal.",
+      "check_type": "dynamic",
+      "pattern_refs": [],
+      "threat_model_filter": "contract_owner -> withdraw() state transition",
+      "priority": "high"
+    },
+    {
+      "id": "CHK-VAL-001-a",
+      "requirement_id": "R-DEP-002",
+      "property": "deposit() reverts when called with msg.value == 0, regardless of caller identity (owner or whitelisted).",
+      "check_type": "dynamic",
+      "pattern_refs": [],
+      "threat_model_filter": "external_caller -> deposit() input validation",
+      "priority": "high"
+    },
+    {
+      "id": "CHK-VAL-002-a",
+      "requirement_id": "R-WDR-002",
+      "property": "withdraw(amount) reverts when amount > address(this).balance. Test with amount = address(this).balance + 1.",
+      "check_type": "dynamic",
+      "pattern_refs": [],
+      "threat_model_filter": "contract_owner -> withdraw() input validation",
+      "priority": "high"
+    },
+    {
+      "id": "CHK-VAL-002-b",
+      "requirement_id": "R-WDR-002",
+      "property": "withdraw(0) edge case: verify behavior when amount is 0 and contract balance is 0. The require(amount <= balance) passes trivially, so withdraw(0) succeeds — confirm this is acceptable.",
+      "check_type": "dynamic",
+      "pattern_refs": [],
+      "threat_model_filter": "contract_owner -> withdraw() edge case validation",
+      "priority": "high"
+    },
+    {
+      "id": "CHK-VAL-003-a",
+      "requirement_id": "SPEC-VAL-001",
+      "property": "withdraw() function signature declares parameter 'amount' of type uint256, matching the interface specification.",
+      "check_type": "static",
+      "pattern_refs": [],
+      "threat_model_filter": "contract_owner -> withdraw() parameter specification",
+      "priority": "medium"
+    },
+    {
+      "id": "CHK-VAL-004-a",
+      "requirement_id": "SPEC-VAL-002",
+      "property": "addToWhitelist() function signature declares parameter 'addr' of type address, matching the interface specification.",
+      "check_type": "static",
+      "pattern_refs": [],
+      "threat_model_filter": "contract_owner -> addToWhitelist() parameter specification",
+      "priority": "medium"
+    },
+    {
+      "id": "CHK-VAL-005-a",
+      "requirement_id": "SPEC-VAL-003",
+      "property": "removeFromWhitelist() function signature declares parameter 'addr' of type address, matching the interface specification.",
+      "check_type": "static",
+      "pattern_refs": [],
+      "threat_model_filter": "contract_owner -> removeFromWhitelist() parameter specification",
+      "priority": "medium"
+    }
+  ]
+}

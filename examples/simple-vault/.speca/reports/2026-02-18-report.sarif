@@ -1,0 +1,117 @@
+{
+  "$schema": "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/main/sarif-2.1/schema/sarif-schema-2.1.0.json",
+  "version": "2.1.0",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "speca",
+          "version": "1.0",
+          "informationUri": "https://arxiv.org/abs/2602.07513",
+          "rules": [
+            {
+              "id": "CHK-ACCESS-001-a",
+              "shortDescription": {
+                "text": "deposit() is callable by any external address without whitelist or owner check, violating the requirement that only whitelisted addresses or the owner may call deposit(). Verify that a require(whitelist[msg.sender] || msg.sender == owner) guard or equivalent modifier is present."
+              },
+              "defaultConfiguration": {
+                "level": "error"
+              }
+            },
+            {
+              "id": "CHK-ACCESS-001-b",
+              "shortDescription": {
+                "text": "emergencyUnpause() at line 45 is missing the onlyOwner modifier, allowing any external address to unpause the contract and re-enable deposits and withdrawals. Verify that onlyOwner modifier is applied to emergencyUnpause()."
+              },
+              "defaultConfiguration": {
+                "level": "error"
+              }
+            },
+            {
+              "id": "CHK-REENT-001-a",
+              "shortDescription": {
+                "text": "withdraw() makes external call via .call{value: amount} at line 35 without updating any state variables (balances mapping is never decremented). This violates the checks-effects-interactions pattern and creates a reentrancy vector where the recipient can re-enter before state reflects the withdrawal."
+              },
+              "defaultConfiguration": {
+                "level": "error"
+              }
+            }
+          ]
+        }
+      },
+      "results": [
+        {
+          "ruleId": "CHK-ACCESS-001-a",
+          "level": "error",
+          "message": {
+            "text": "Missing whitelist/owner access control in deposit(): The deposit() function at line 23 is callable by any external address. The specification R-AUTH-003 requires that only whitelisted addresses or the owner may call deposit(). The function has no require() check, modifier, or any other mechanism to enforce this access restriction. This violates the authorization model of the contract: any UNTRUSTED external_caller can deposit ETH into the vault, bypassing the whitelist entirely. Combined with FIND-002 (anyone can unpause), an attacker can interact with the vault in ways the specification explicitly forbids."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "./examples/simple-vault/contracts/Vault.sol"
+                },
+                "region": {
+                  "startLine": 23,
+                  "endLine": 28
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "CHK-ACCESS-001-b",
+          "level": "error",
+          "message": {
+            "text": "Missing onlyOwner modifier on emergencyUnpause(): The emergencyUnpause() function at line 45 lacks the onlyOwner modifier, allowing any external address to unpause the contract. The specification R-EMR-002 requires that only the owner may call both emergencyPause() and emergencyUnpause(). While emergencyPause() correctly has the onlyOwner modifier (line 40), emergencyUnpause() does not. This completely undermines the emergency pause mechanism: if the owner pauses the contract to prevent exploitation of another vulnerability, any attacker can immediately unpause it, re-enabling deposits and withdrawals."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "./examples/simple-vault/contracts/Vault.sol"
+                },
+                "region": {
+                  "startLine": 45,
+                  "endLine": 47
+                }
+              }
+            },
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "./examples/simple-vault/contracts/Vault.sol"
+                },
+                "region": {
+                  "startLine": 40,
+                  "endLine": 42
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "CHK-REENT-001-a",
+          "level": "error",
+          "message": {
+            "text": "Reentrancy vulnerability in withdraw() — CEI pattern violated with no state updates before external call: The withdraw() function at line 31 makes an external call via .call{value: amount} at line 35 without performing any state variable updates beforehand. There is no nonReentrant guard. The checks-effects-interactions (CEI) pattern is violated: the function checks (require statements at lines 32-33), emits an event (line 34), then immediately performs the external interaction (line 35) without any effects (state updates). Additionally, the balances mapping is never decremented during withdrawal, meaning there is no state to update — the accounting only tracks deposits, not withdrawals. If the owner address is a smart contract, its receive() or fallback() function can re-enter withdraw() before the first call completes. Since the balance check uses address(this).balance (which decreases with each ETH transfer), recursive calls would eventually exhaust the contract balance. This also relates to checklist items CHK-REENT-001-b (R-WDR-004: SHOULD follow CEI pattern) and CHK-REENT-002-a (cross-function reentrancy)."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "./examples/simple-vault/contracts/Vault.sol"
+                },
+                "region": {
+                  "startLine": 31,
+                  "endLine": 38
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
