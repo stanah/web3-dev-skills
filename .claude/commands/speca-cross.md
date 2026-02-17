@@ -16,41 +16,61 @@ This command takes a finding (or set of findings) from a completed audit and che
 
 ---
 
-## Phase 0: Prerequisites Check and Argument Parsing
+## Phase 0: Prerequisites Check and Configuration
 
-### Step 0a: Parse Arguments
-
-Parse `$ARGUMENTS` for the following flags:
-
-- `--finding=FIND-NNN`: (Optional) Specific finding ID to propagate. If omitted, propagate ALL findings from the primary audit.
-- `--finding-severity=LEVEL`: (Optional) Propagate only findings at this severity or above. One of `critical`, `high`, `medium`, `low`. Default: `high` (propagate critical and high findings).
-- `--targets=PATH1,PATH2,...`: (Required) Comma-separated list of target repository or directory paths containing alternative Solidity implementations.
-- `--interface=PATH`: (Optional) Path to a shared interface file (.sol) or ERC standard identifier (e.g., `ERC20`, `ERC721`, `ERC4626`). Used to align functions across implementations.
-
-If `--targets` is not provided, stop and tell the user: "The --targets flag is required. Provide comma-separated paths to alternative implementations. Example: `/speca-cross --targets=./repo-b,./repo-c`"
-
-### Step 0b: Load Primary Audit Artifacts
+### Step 0a: Load Configuration
 
 1. Read `.speca/config.json`. If not found, stop and tell the user to run `/speca-init`.
 2. Extract the `language` field (default `"en"`).
-3. Read `.speca/findings.json`. If not found, stop and tell the user to run `/speca-audit` first.
-4. Read `.speca/checklist.json`. If not found, stop and tell the user to run `/speca-checklist` first.
-5. Read `.speca/mapping.json`. If not found, stop and tell the user to run `/speca-map` first.
-6. Read `.speca/requirements.json`. If not found, stop and tell the user to run `/speca-extract` first.
-7. Read `.claude/speca/patterns-v1.json` for vulnerability pattern definitions.
+3. Extract the `cross` object from config.json. This object contains cross-implementation settings:
+
+```json
+{
+  "cross": {
+    "targets": ["./repo-b", "./repo-c"],
+    "interface": "ERC4626",
+    "min_severity": "high"
+  }
+}
+```
+
+- `cross.targets`: (Required) Array of directory paths containing alternative Solidity implementations.
+- `cross.interface`: (Optional) Path to a shared interface file (.sol) or ERC standard identifier (e.g., `ERC20`, `ERC721`, `ERC4626`). Used to align functions across implementations.
+- `cross.min_severity`: (Optional) Minimum finding severity to propagate. One of `critical`, `high`, `medium`, `low`. Default: `"high"` (propagate critical and high findings).
+
+If the `cross` object does not exist or `cross.targets` is missing or empty, stop and tell the user:
+`"No cross-implementation targets configured. Add a 'cross' section to .speca/config.json with target paths. Example:"`
+```json
+{
+  "cross": {
+    "targets": ["./repo-b", "./repo-c"],
+    "interface": "ERC4626",
+    "min_severity": "high"
+  }
+}
+```
+`"You can add this section manually to .speca/config.json or re-run /speca-init to configure it."`
+
+### Step 0b: Load Primary Audit Artifacts
+
+1. Read `.speca/findings.json`. If not found, stop and tell the user to run `/speca-audit` first.
+2. Read `.speca/checklist.json`. If not found, stop and tell the user to run `/speca-checklist` first.
+3. Read `.speca/mapping.json`. If not found, stop and tell the user to run `/speca-map` first.
+4. Read `.speca/requirements.json`. If not found, stop and tell the user to run `/speca-extract` first.
+5. Read `.claude/speca/patterns-v1.json` for vulnerability pattern definitions.
 
 ### Step 0c: Select Findings to Propagate
 
-Based on the arguments:
-- If `--finding=FIND-NNN` is specified, select only that finding.
-- If `--finding-severity=LEVEL` is specified, select findings at that severity or above.
-- Otherwise, select all findings with severity `critical` or `high`.
+Based on the `cross.min_severity` setting:
+- Select all findings with severity at or above the configured minimum.
+- Severity ordering (high to low): `critical` > `high` > `medium` > `low`.
+- Default: select all findings with severity `critical` or `high`.
 
-If no findings match the selection criteria, tell the user: "No findings match the propagation criteria. Specify a different --finding or --finding-severity."
+If no findings match the selection criteria, tell the user: "No findings match the propagation criteria (min_severity: <level>). Lower the min_severity in .speca/config.json or run /speca-audit to generate findings first."
 
 ### Step 0d: Validate Target Paths
 
-For each path in `--targets`:
+For each path in `cross.targets`:
 1. Verify the directory exists using the Glob tool (`<path>/**/*.sol`).
 2. If no `.sol` files are found in a target path, warn the user and skip that target.
 3. Record the list of valid target paths and their Solidity files.
@@ -291,21 +311,29 @@ Next steps:
 
 ---
 
-## Batch Control
+## Automatic Batch Control
 
-For audits with many findings or many targets, use batch control.
+For audits with many findings or many targets, this command automatically batches the work.
 
-### Batch Parameters
+### Auto-Detection Logic
 
-Parse `$ARGUMENTS` for:
+1. **Count total pairs**: Let `TOTAL_PAIRS` = (number of selected findings) × (number of valid targets).
+2. **Determine BATCH_SIZE**: Read `batch_size` from `.speca/config.json` if present. Default: 5 (finding-target pairs per batch).
+3. **Check for existing progress**: Read `.speca/cross_progress.json` using the Read tool. If it exists, this is a **resume run**. If not, this is a **fresh run**.
 
-- `--batch=N`: Process batch N of the findings×targets matrix. Each batch processes `BATCH_SIZE` finding-target pairs.
-- `--batch-size=N`: Number of finding-target pairs per batch. Default: 5.
-- `--resume`: Continue from `.speca/cross_progress.json`.
+### Fresh Run (no progress file)
 
-### Progress Tracking
+- If `TOTAL_PAIRS <= BATCH_SIZE`: Process all finding-target pairs in a single run. No progress file needed.
+- If `TOTAL_PAIRS > BATCH_SIZE`: Process only the first `BATCH_SIZE` pairs. Write a progress file. Tell the user:
+  `"Batch 1/<total_batches> complete. <remaining> pairs remaining. Run /speca-cross again to continue."`
 
-After each batch, write `.speca/cross_progress.json`:
+### Resume Run (progress file exists)
+
+- Read the progress file and extract `last_processed_pair` and `total_pairs`.
+- If `last_processed_pair + 1 >= total_pairs`: All pairs processed. Delete the progress file and start fresh.
+- Otherwise: Continue from `last_processed_pair + 1`.
+
+### Progress File Schema
 
 ```json
 {
@@ -319,18 +347,16 @@ After each batch, write `.speca/cross_progress.json`:
 
 ### Merging
 
-When in batch mode, append new cross-findings to existing `.speca/cross-findings.json`. Re-assign XFIND IDs after the final batch.
+When resuming, append new cross-findings to existing `.speca/cross-findings.json`. When the final batch completes, re-assign XFIND IDs sequentially and delete the progress file.
 
 ---
 
 ## Error Handling
 
 - If `.speca/findings.json` does not exist, stop and tell the user to run `/speca-audit`.
-- If `--targets` is not provided, stop with usage instructions.
+- If `cross.targets` is not configured in `.speca/config.json`, stop with configuration instructions (see Phase 0).
 - If a target directory does not exist or contains no `.sol` files, warn and skip that target.
-- If `--finding=FIND-NNN` references a finding that does not exist, stop and tell the user.
-- If `.speca/cross-findings.json` already exists and no batch flags are set, overwrite it.
-- If `--resume` is specified but `.speca/cross_progress.json` does not exist, tell the user to start with `--batch=1`.
+- If `.speca/cross-findings.json` already exists and no progress file exists, overwrite it.
 
 ---
 

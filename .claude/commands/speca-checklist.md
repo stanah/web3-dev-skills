@@ -299,37 +299,31 @@ Only include pattern category rows that have a non-zero count.
 
 ---
 
-## Batch Control
+## Automatic Batch Control
 
-For large projects with many requirements (20+ mapped requirements), processing all items in a single run may exceed the context window. Use batch control to process items incrementally.
+For large projects with many requirements, processing all items in a single run may exceed the context window. This command automatically detects when batching is needed and manages progress without requiring any arguments.
 
-### Batch Parameters
+### Auto-Detection Logic
 
-Parse `$ARGUMENTS` for the following optional flags:
+1. **Count total items**: Let `TOTAL` = number of entries in the `mappings` array with `status: "mapped"`, plus the number with `status: "unmapped"`.
+2. **Determine BATCH_SIZE**: Read `batch_size` from `.speca/config.json` if present (under a top-level `batch_size` key). Default: 10.
+3. **Check for existing progress**: Read `.speca/checklist_progress.json` using the Read tool. If it exists, this is a **resume run**. If it does not exist, this is a **fresh run**.
 
-- `--batch=N`: Start processing from batch number N (1-indexed). Each batch processes `BATCH_SIZE` mapped requirements.
-- `--batch-size=N`: Number of mapped requirements to process per batch. Default: 10.
-- `--resume`: Continue from where the last batch left off, reading progress from `.speca/checklist_progress.json`.
+### Fresh Run (no progress file)
 
-If no batch flags are provided, process ALL requirements in a single run (default behavior for small projects).
+- If `TOTAL <= BATCH_SIZE`: Process all requirements in a single run. No batching needed. Do NOT create a progress file.
+- If `TOTAL > BATCH_SIZE`: Process only the first `BATCH_SIZE` requirements (indices `[0, BATCH_SIZE)`). Write a progress file after completion. Tell the user how many batches remain:
+  `"Batch 1/<total_batches> complete. <remaining> requirements remaining. Run /speca-checklist again to continue."`
 
-### Batch Processing Logic
+### Resume Run (progress file exists)
 
-1. **Count total items**: Let `TOTAL` = number of entries in the `mappings` array.
-2. **If `TOTAL <= BATCH_SIZE` and no batch flags given**: Process all items normally (no batching needed).
-3. **If `--batch=N` is specified**:
-   - Calculate `start_index = (N - 1) * BATCH_SIZE`.
-   - Calculate `end_index = min(start_index + BATCH_SIZE, TOTAL)`.
-   - Process only requirements at indices `[start_index, end_index)`.
-4. **If `--resume` is specified**:
-   - Read `.speca/checklist_progress.json` (schema below).
-   - Set `start_index = last_processed_index + 1`.
-   - Set `end_index = min(start_index + BATCH_SIZE, TOTAL)`.
-   - If `start_index >= TOTAL`, tell the user: "All requirements have been processed. Run without --resume to regenerate from scratch."
+- Read the progress file and extract `last_processed_index` and `total`.
+- If `last_processed_index + 1 >= total`: All requirements have been processed. Delete the progress file (`.speca/checklist_progress.json`). Tell the user: `"All requirements have already been processed. Deleting progress file and starting fresh."` Then proceed as a fresh run.
+- Otherwise: Set `start_index = last_processed_index + 1` and `end_index = min(start_index + BATCH_SIZE, TOTAL)`. Process requirements at indices `[start_index, end_index)`.
 
-### Progress Tracking
+### Progress File Schema
 
-After each batch run, write `.speca/checklist_progress.json`:
+After each batch run (only when batching is active), write `.speca/checklist_progress.json`:
 
 ```json
 {
@@ -343,11 +337,15 @@ After each batch run, write `.speca/checklist_progress.json`:
 
 ### Merging Batch Results
 
-When running in batch mode:
-- If `.speca/checklist.json` already exists from a previous batch, read it and **append** new check items to the existing `checklist` array.
+When resuming (progress file existed):
+- Read existing `.speca/checklist.json` and **append** new check items to the existing `checklist` array.
 - Update the `total_checks` and `summary` counts to reflect all accumulated items.
 - Do NOT overwrite previous batch results; merge them.
-- After the final batch (when `last_processed_index + 1 >= TOTAL`), recalculate IDs and priorities across the full merged checklist to ensure consistency.
+
+When the final batch completes (when `last_processed_index + 1 >= TOTAL`):
+- Recalculate IDs and priorities across the full merged checklist to ensure consistency.
+- Delete `.speca/checklist_progress.json` to indicate completion.
+- Print: `"All <TOTAL> requirements processed across <N> batches. Checklist complete."`
 
 ---
 
@@ -358,8 +356,7 @@ When running in batch mode:
 - If `.speca/mapping.json` does not exist, stop and tell the user to run `/speca-map`.
 - If the requirements array is empty, stop and tell the user: "No requirements found. Please run `/speca-extract` to populate the requirements."
 - If the mappings array is empty, stop and tell the user: "No mappings found. Please run `/speca-map` to map requirements to source code."
-- If `.speca/checklist.json` already exists and no batch flags are set, overwrite it without asking (checklist generation is idempotent and re-runnable).
-- If `--resume` is specified but `.speca/checklist_progress.json` does not exist, tell the user: "No progress file found. Run with `--batch=1` to start a new batch run."
+- If `.speca/checklist.json` already exists and no progress file exists, overwrite it without asking (checklist generation is idempotent and re-runnable).
 
 ---
 

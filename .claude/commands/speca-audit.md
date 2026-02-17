@@ -49,37 +49,31 @@ Maintain the sorted list as the audit queue. You will process items in this orde
 
 ---
 
-## Batch Control
+## Automatic Batch Control
 
-For large checklists (20+ static items), processing all items in a single run may exceed the context window. Use batch control to process items incrementally.
+For large checklists (20+ static items), processing all items in a single run may exceed the context window. This command automatically detects when batching is needed and manages progress without requiring any arguments.
 
-### Batch Parameters
-
-Parse `$ARGUMENTS` for the following optional flags:
-
-- `--batch=N`: Start processing from batch number N (1-indexed) of the sorted audit queue. Each batch processes `BATCH_SIZE` items.
-- `--batch-size=N`: Number of checklist items to audit per batch. Default: 10.
-- `--resume`: Continue from where the last batch left off, reading progress from `.speca/audit_progress.json`.
-
-If no batch flags are provided, process ALL static checklist items in a single run (default behavior for small projects).
-
-### Batch Processing Logic
+### Auto-Detection Logic
 
 1. **Count total static items**: Let `TOTAL` = number of checklist items with `check_type: "static"` (after sorting in Phase 1).
-2. **If `TOTAL <= BATCH_SIZE` and no batch flags given**: Process all items normally (no batching needed).
-3. **If `--batch=N` is specified**:
-   - Calculate `start_index = (N - 1) * BATCH_SIZE`.
-   - Calculate `end_index = min(start_index + BATCH_SIZE, TOTAL)`.
-   - Process only the sorted checklist items at indices `[start_index, end_index)`.
-4. **If `--resume` is specified**:
-   - Read `.speca/audit_progress.json`.
-   - Set `start_index = last_processed_index + 1`.
-   - Set `end_index = min(start_index + BATCH_SIZE, TOTAL)`.
-   - If `start_index >= TOTAL`, tell the user: "All checklist items have been audited. Run without --resume to re-audit from scratch."
+2. **Determine BATCH_SIZE**: Read `batch_size` from `.speca/config.json` if present (under a top-level `batch_size` key). Default: 10.
+3. **Check for existing progress**: Read `.speca/audit_progress.json` using the Read tool. If it exists, this is a **resume run**. If it does not exist, this is a **fresh run**.
 
-### Progress Tracking
+### Fresh Run (no progress file)
 
-After each batch run, write `.speca/audit_progress.json`:
+- If `TOTAL <= BATCH_SIZE`: Process all static checklist items in a single run. No batching needed. Do NOT create a progress file.
+- If `TOTAL > BATCH_SIZE`: Process only the first `BATCH_SIZE` items from the sorted audit queue (indices `[0, BATCH_SIZE)`). Write a progress file after completion. Tell the user:
+  `"Batch 1/<total_batches> complete. <remaining> checklist items remaining. Run /speca-audit again to continue."`
+
+### Resume Run (progress file exists)
+
+- Read the progress file and extract `last_processed_index` and `total`.
+- If `last_processed_index + 1 >= total`: All items have been audited. Delete the progress file (`.speca/audit_progress.json`). Tell the user: `"All checklist items have already been audited. Deleting progress file and starting fresh."` Then proceed as a fresh run.
+- Otherwise: Set `start_index = last_processed_index + 1` and `end_index = min(start_index + BATCH_SIZE, TOTAL)`. Process items at indices `[start_index, end_index)`.
+
+### Progress File Schema
+
+After each batch run (only when batching is active), write `.speca/audit_progress.json`:
 
 ```json
 {
@@ -93,11 +87,15 @@ After each batch run, write `.speca/audit_progress.json`:
 
 ### Merging Batch Results
 
-When running in batch mode:
-- If `.speca/findings.json` already exists from a previous batch, read it and **append** new findings to the existing `findings` array.
+When resuming (progress file existed):
+- Read existing `.speca/findings.json` and **append** new findings to the existing `findings` array.
 - Update `total_findings` and `findings_by_severity` counts to reflect all accumulated findings.
 - Do NOT overwrite previous batch results; merge them.
-- After the final batch (when `last_processed_index + 1 >= TOTAL`), re-assign finding IDs sequentially across the full merged findings list (FIND-001, FIND-002, ...) ordered by severity.
+
+When the final batch completes (when `last_processed_index + 1 >= TOTAL`):
+- Re-assign finding IDs sequentially across the full merged findings list (FIND-001, FIND-002, ...) ordered by severity.
+- Delete `.speca/audit_progress.json` to indicate completion.
+- Print: `"All <TOTAL> checklist items audited across <N> batches. Audit complete."`
 
 ---
 
@@ -425,8 +423,7 @@ Next steps:
 - If `.speca/mapping.json` does not exist, stop and tell the user to run `/speca-map`.
 - If a Solidity source file referenced in `mapping.json` cannot be read, warn the user and skip checks that depend on that file. Record a finding of severity `high` noting that the source file is missing.
 - If the checklist array is empty, stop and tell the user: "The checklist is empty. Please run `/speca-checklist` to generate check items."
-- If `.speca/findings.json` already exists and no batch flags are set, overwrite it without asking (auditing is idempotent and re-runnable).
-- If `--resume` is specified but `.speca/audit_progress.json` does not exist, tell the user: "No progress file found. Run with `--batch=1` to start a new batch run."
+- If `.speca/findings.json` already exists and no progress file exists, overwrite it without asking (auditing is idempotent and re-runnable).
 
 ---
 

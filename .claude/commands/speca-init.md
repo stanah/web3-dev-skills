@@ -204,11 +204,24 @@ Write `.speca/config.json` with the following schema:
     "assumptions": [
       "EVM execution is deterministic"
     ]
+  },
+  "batch_size": 10,
+  "cross": {
+    "targets": [],
+    "interface": null,
+    "min_severity": "high"
   }
 }
 ```
 
-Replace the example values with the actual collected values from Phases 1-4. Use the Write tool to create the file. Ensure the JSON is properly formatted with 2-space indentation.
+Field details:
+- `batch_size`: (Optional) Number of items to process per batch in `/speca-checklist` and `/speca-audit`. Default: 10. Increase for small projects, decrease for very large contracts.
+- `cross`: (Optional) Configuration for `/speca-cross` cross-implementation checking.
+  - `cross.targets`: Array of directory paths to alternative implementations. Leave empty (`[]`) if not using cross-implementation checking.
+  - `cross.interface`: Path to a shared interface `.sol` file or ERC standard identifier (e.g., `"ERC20"`, `"ERC4626"`). Set to `null` if not applicable.
+  - `cross.min_severity`: Minimum finding severity to propagate. Default: `"high"`.
+
+Replace the example values with the actual collected values from Phases 1-4. The `batch_size` and `cross` fields use their defaults unless the user specifies otherwise. Use the Write tool to create the file. Ensure the JSON is properly formatted with 2-space indentation.
 
 ---
 
