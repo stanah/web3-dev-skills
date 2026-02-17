@@ -1,0 +1,404 @@
+---
+name: speca-audit
+description: Static security audit of Solidity code against specification checklist with three-phase inspection and threat model filtering
+---
+
+# /speca-audit - Static Security Audit
+
+You are performing a static security audit of Solidity smart contract source code against the specification-derived checklist. This is Phase 3 of the SPECA (SPEcification-to-Checklist Auditing) pipeline and is the core value-producing step. Your goal is to identify real vulnerabilities with concrete code evidence while minimizing false positives through threat model filtering. Every finding you report must be backed by actual code references and step-by-step reasoning.
+
+---
+
+## Phase 0: Prerequisites Check
+
+1. Read `.speca/config.json` using the Read tool.
+2. If the file does not exist, stop and tell the user: "No SPECA config found. Please run `/speca-init` first to initialize the project."
+3. Parse the JSON and extract the `threat_model` object (including `actors`, `boundaries`, and `assumptions`). You will need this for threat model filtering in Phase 3.
+4. Read `.speca/checklist.json` using the Read tool.
+5. If the file does not exist, stop and tell the user: "No checklist found. Please run `/speca-checklist` first to generate the security checklist."
+6. Parse the JSON and extract the `checklist` array and the `generated_at` timestamp.
+7. Read `.speca/mapping.json` using the Read tool.
+8. If the file does not exist, stop and tell the user: "No requirement-to-code mapping found. Please run `/speca-map` first to map requirements to source code."
+9. Parse the JSON and extract the `mappings` array and the `source_files` list.
+10. Load all Solidity source files listed in `source_files` from `mapping.json`. Read each file fully using the Read tool. Store the contents indexed by file path for reference during inspection.
+
+---
+
+## Phase 1: Sort and Prioritize Checklist
+
+Sort the checklist items to determine audit order. Items are audited in this order:
+
+### Step 1a: Sort by Priority
+
+Order checklist items by priority level, highest first:
+1. `critical`
+2. `high`
+3. `medium`
+4. `low`
+
+### Step 1b: Sort by Check Type Within Priority
+
+Within the same priority level, sort by `check_type`:
+1. `static` first (these can be verified by code inspection)
+2. `dynamic` second (these require test execution; note them for `/speca-test`)
+
+### Step 1c: Record Audit Queue
+
+Maintain the sorted list as the audit queue. You will process items in this order. Track which items have been audited as you progress.
+
+---
+
+## Phase 2: Three-Phase Inspection
+
+For each checklist item with `check_type: "static"`, locate the corresponding code using the `mappings` array (match via `requirement_id`) and perform the three-phase inspection below. For items with `check_type: "dynamic"`, skip the code inspection and mark them as `"skipped_dynamic"` in the results (they will be handled by `/speca-test`).
+
+### How to Find Code for a Checklist Item
+
+1. Take the checklist item's `requirement_id`.
+2. Find the matching entry in the `mappings` array where `requirement_id` matches.
+3. Use the `locations` array from that mapping entry to find the file, function, and line range.
+4. Read the actual source code at those locations from your loaded Solidity files.
+
+If the mapping entry has `status: "unmapped"`, there is no code to inspect. Create a finding for "Missing implementation" immediately (see Phase 2a below).
+
+---
+
+### Phase 2a: Presence Check
+
+For each checklist item, answer these questions:
+
+1. **Does code exist at the mapped location?** Read the source file at the specified line range. Verify that a function, modifier, or logic block exists there.
+2. **Does the code address this specific requirement?** Check whether there is a function, modifier, require/revert statement, or logic block that corresponds to the property being checked.
+3. **For unmapped requirements:** If the mapping status is `"unmapped"`, no code addresses this requirement. This is an automatic finding.
+
+**If no code is found that addresses the requirement:**
+- Create a finding with title: `"Missing implementation for <requirement_id>"`
+- Set severity based on the checklist item's priority.
+- In `proof_trace.reasoning`, explain what code was expected and where, and why it is absent.
+- Skip Phases 2b and 2c for this item (there is no code to check for correctness or completeness).
+
+**If code exists:** Proceed to Phase 2b.
+
+---
+
+### Phase 2b: Correctness Check
+
+For each checklist item where code was found in Phase 2a, verify correctness:
+
+1. **Does the code correctly implement the requirement?** Compare the code logic against the property statement in the checklist item. Trace through the code path step by step.
+
+2. **Are the conditions and guards correct?** Check:
+   - Comparison operators: Is `<` used where `<=` is needed, or vice versa?
+   - Require/revert conditions: Do they check the right thing? Is the logic inverted?
+   - Modifier presence: Are the right modifiers applied? Are any missing?
+   - State variable references: Does the code read/write the correct variables?
+
+3. **Does the logic match the specification?** Compare against the requirement text from `requirements.json` (accessible via the mapping's `requirement_text` field).
+
+4. **Check against matched vulnerability patterns.** If the checklist item has `pattern_refs`, evaluate the code specifically for the referenced vulnerability patterns:
+   - **REENT-001**: Are state variables updated AFTER an external call? Look for `.call`, `.send`, `.transfer` followed by state variable assignments.
+   - **ACCESS-001**: Is a public/external state-changing function missing access control (no modifier, no `require(msg.sender == ...)` check)?
+   - **LOGIC-001**: Are comparison operators correct relative to the specification?
+   - (Apply all relevant patterns from the checklist item's `pattern_refs`.)
+
+**If a correctness issue is found:** Record it as a potential finding with:
+- The specific code that is incorrect.
+- What the code does vs. what it should do.
+- The exact lines where the issue occurs.
+
+**If the code appears correct:** Proceed to Phase 2c.
+
+---
+
+### Phase 2c: Completeness Check
+
+For each checklist item where the code passed Phase 2b (appears correct for the main case), verify completeness:
+
+1. **Are all conditions and edge cases handled?**
+   - What happens with zero values (`0`, `address(0)`, empty arrays)?
+   - What happens at maximum values (`type(uint256).max`)?
+   - What happens at boundary conditions?
+
+2. **Are error paths covered?**
+   - Does the function revert for all invalid inputs?
+   - Are revert messages descriptive and consistent?
+   - Are there code paths that silently succeed when they should revert?
+
+3. **Are all code paths reachable and correct?**
+   - Are there dead code paths (unreachable conditions)?
+   - Are there missing else clauses that should handle a default case?
+   - For loops: are bounds checked? Can they be unbounded?
+
+4. **State consistency:**
+   - After the function executes, is the contract state consistent?
+   - Are all related state variables updated together (no partial updates)?
+   - Is event emission consistent with actual state changes?
+
+**If a completeness issue is found:** Record it as a potential finding.
+
+---
+
+## Phase 3: Threat Model Filtering
+
+After collecting all potential findings from Phase 2, apply the threat model filter to each one. This step happens AFTER finding potential issues, not before. Do not skip potential issues before evaluating them against the threat model.
+
+### Step 3a: Read Threat Model
+
+From `.speca/config.json`, retrieve:
+- `threat_model.actors`: Dictionary of actor names to trust levels (`TRUSTED`, `SEMI_TRUSTED`, `UNTRUSTED`).
+- `threat_model.boundaries`: List of access boundary strings (e.g., `"external_caller -> public/external functions"`).
+- `threat_model.assumptions`: List of security assumptions (e.g., `"Solidity compiler version is ^0.8.x"`).
+
+### Step 3b: For Each Potential Finding, Determine Attack Vector
+
+Ask these questions:
+1. **Who can trigger this vulnerability?** Identify the actor type required to exploit the issue.
+   - Is it any external caller (UNTRUSTED)?
+   - Is it a semi-trusted entity like an oracle (SEMI_TRUSTED)?
+   - Does it require a compromised admin/owner (TRUSTED)?
+
+2. **What capabilities does the attacker need?**
+   - Can they call the vulnerable function directly (public/external)?
+   - Do they need special permissions (modifier-gated)?
+   - Do they need to deploy a malicious contract?
+   - Do they need to control transaction ordering (MEV)?
+
+### Step 3c: Classify False Positive Risk
+
+For each potential finding:
+
+1. **If the attacker is within the threat model boundaries** (e.g., an UNTRUSTED external_caller exploiting a public function):
+   - Set `false_positive_risk` to `"low"`.
+   - The finding is likely a real issue.
+
+2. **If the attacker is partially outside the threat model** (e.g., the attack requires a SEMI_TRUSTED actor to behave maliciously, and the threat model lists that actor as SEMI_TRUSTED):
+   - Set `false_positive_risk` to `"medium"`.
+   - Include a `threat_model_note` explaining the boundary ambiguity.
+
+3. **If the attacker requires capabilities OUTSIDE the threat model** (e.g., the attack requires a TRUSTED admin to be compromised, but the threat model trusts the admin):
+   - Set `false_positive_risk` to `"high"`.
+   - Include a `threat_model_note` explaining why this is outside the threat model.
+   - **Still include the finding** in the output, but with the high false positive risk clearly marked. Do NOT silently discard findings.
+
+4. **If a threat model assumption reduces the finding's relevance** (e.g., the assumption says "Solidity ^0.8.x" and the finding is about integer overflow):
+   - Set `false_positive_risk` to `"high"`.
+   - Include a `threat_model_note` referencing the specific assumption.
+
+---
+
+## Phase 4: Finding Construction
+
+For each confirmed finding (all potential findings that survived Phase 3 classification), construct a structured finding object. Every finding MUST include all fields below. No exceptions.
+
+### Finding Schema
+
+```json
+{
+  "id": "FIND-NNN",
+  "checklist_id": "CHK-AUTH-001-a",
+  "severity": "critical|high|medium|low|informational",
+  "title": "Short descriptive title",
+  "description": "Detailed description of the issue including what the code does, what it should do, and why the discrepancy matters.",
+  "proof_trace": {
+    "code_refs": [
+      {
+        "file": "contracts/Vault.sol",
+        "lines": [45, 52],
+        "snippet": "relevant code excerpt (copy the actual source lines)"
+      }
+    ],
+    "reasoning": "Step-by-step reasoning chain explaining: (1) what the specification requires, (2) what the code actually does, (3) why this is a problem, (4) what the impact is."
+  },
+  "recommendation": "Specific fix suggestion with enough detail to implement. Include code example if helpful.",
+  "false_positive_risk": "low|medium|high",
+  "threat_model_note": "Explanation of why this finding is or is not within the defined threat model boundaries."
+}
+```
+
+### Finding ID Assignment
+
+Assign IDs sequentially: `FIND-001`, `FIND-002`, `FIND-003`, etc. Order findings by severity (critical first) when assigning IDs.
+
+### Severity Classification
+
+Use these severity levels for Solidity smart contracts:
+
+- **Critical**: Direct fund loss, contract drain, permanent denial of service. The vulnerability can be exploited to steal or permanently lock funds, or to permanently brick the contract with no recovery path. Examples: reentrancy allowing contract drain, missing access control on withdrawal functions, unprotected selfdestruct.
+
+- **High**: Access control bypass, privilege escalation, state corruption with potential fund impact. The vulnerability allows unauthorized actions that could indirectly lead to fund loss or gives an attacker elevated privileges. Examples: missing onlyOwner on admin functions, logic errors that corrupt accounting state, cross-function reentrancy.
+
+- **Medium**: Logic errors without direct fund impact, denial of service with recovery path, specification deviations that affect functionality. The vulnerability causes incorrect behavior but does not directly threaten funds, or causes a temporary DoS that can be resolved. Examples: wrong comparison operator causing incorrect validation, events emitted with wrong parameters, missing input validation on non-critical parameters.
+
+- **Low**: Best practice violations, gas inefficiency, minor specification deviations, code quality issues. The issue does not affect security or correctness in the current context but represents a deviation from best practices. Examples: missing natspec documentation, unnecessary storage reads, non-standard event parameter ordering.
+
+- **Informational**: Suggestions for improvement, style recommendations, documentation gaps. Not a vulnerability or bug, but noting for completeness. Examples: consider using custom errors instead of revert strings, consider adding reentrancy guard as defense-in-depth.
+
+### Proof Trace Requirements
+
+Every finding MUST have a `proof_trace` with:
+
+1. **At least one `code_refs` entry** containing:
+   - `file`: The relative path to the Solidity source file.
+   - `lines`: An array of two integers `[start_line, end_line]` identifying the problematic code.
+   - `snippet`: The actual source code lines copied from the file. Do not paraphrase or summarize the code; copy it verbatim.
+
+2. **A `reasoning` string** that follows this structure:
+   - **Specification says:** What does the requirement/checklist item require?
+   - **Code does:** What does the code actually do at the referenced location?
+   - **Gap:** What is the discrepancy between the spec and the code?
+   - **Impact:** What is the concrete security or correctness impact?
+
+Do NOT report findings without concrete code evidence. If you cannot point to specific lines of code that demonstrate the issue, do not create the finding.
+
+---
+
+## Phase 5: Write Output
+
+### Step 5a: Build the Output JSON
+
+Construct the output object with this exact schema:
+
+```json
+{
+  "audited_at": "<ISO 8601 timestamp>",
+  "checklist_version": "<generated_at value from checklist.json>",
+  "total_checks_audited": <integer>,
+  "total_findings": <integer>,
+  "findings_by_severity": {
+    "critical": <integer>,
+    "high": <integer>,
+    "medium": <integer>,
+    "low": <integer>,
+    "informational": <integer>
+  },
+  "findings": [
+    {
+      "id": "FIND-001",
+      "checklist_id": "CHK-AUTH-001-a",
+      "severity": "critical",
+      "title": "...",
+      "description": "...",
+      "proof_trace": {
+        "code_refs": [
+          {
+            "file": "...",
+            "lines": [0, 0],
+            "snippet": "..."
+          }
+        ],
+        "reasoning": "..."
+      },
+      "recommendation": "...",
+      "false_positive_risk": "low",
+      "threat_model_note": "..."
+    }
+  ]
+}
+```
+
+Field details:
+- `audited_at`: Current date and time in ISO 8601 format (e.g., `"2026-02-17T12:00:00Z"`).
+- `checklist_version`: The `generated_at` value from `checklist.json`, used to track which checklist version was audited.
+- `total_checks_audited`: The number of checklist items that were inspected (static checks only; exclude dynamic checks that were skipped).
+- `total_findings`: The total number of findings in the `findings` array.
+- `findings_by_severity`: Count of findings at each severity level. Include all five levels even if count is 0.
+- `findings`: Array of finding objects ordered by severity (critical first, then high, medium, low, informational), then by finding ID within the same severity.
+
+### Step 5b: Write the File
+
+Write the JSON to `.speca/findings.json` using the Write tool. Use 2-space indentation for readability.
+
+---
+
+## Phase 6: Print Summary
+
+After writing the file, print a summary to the user in this format:
+
+### Summary Table
+
+```
+Static security audit complete!
+
+Findings Summary:
+| Severity      | Count |
+|---------------|-------|
+| Critical      | <N>   |
+| High          | <N>   |
+| Medium        | <N>   |
+| Low           | <N>   |
+| Informational | <N>   |
+| TOTAL         | <N>   |
+```
+
+### Findings Detail
+
+For each finding, print a row:
+
+```
+Findings:
+| ID       | Severity | Title                                     | File:Line             | FP Risk |
+|----------|----------|-------------------------------------------|-----------------------|---------|
+| FIND-001 | critical | Missing whitelist check in deposit()      | contracts/Vault.sol:23| low     |
+| FIND-002 | critical | Reentrancy in withdraw()                  | contracts/Vault.sol:31| low     |
+| ...      | ...      | ...                                       | ...                   | ...     |
+```
+
+### Coverage
+
+```
+Checklist Coverage:
+  Static checks audited: <N> / <total static checks>
+  Dynamic checks skipped: <N> (to be tested with /speca-test)
+  Checklist items with findings: <N>
+  Checklist items passed: <N>
+```
+
+### Next Steps
+
+```
+Output written to: .speca/findings.json
+
+Next steps:
+  - Run /speca-test to generate Proof-of-Concept tests for critical/high findings
+  - Run /speca-report to generate the full audit report
+```
+
+---
+
+## Error Handling
+
+- If `.speca/config.json` does not exist, stop and tell the user to run `/speca-init`.
+- If `.speca/checklist.json` does not exist, stop and tell the user to run `/speca-checklist`.
+- If `.speca/mapping.json` does not exist, stop and tell the user to run `/speca-map`.
+- If a Solidity source file referenced in `mapping.json` cannot be read, warn the user and skip checks that depend on that file. Record a finding of severity `high` noting that the source file is missing.
+- If the checklist array is empty, stop and tell the user: "The checklist is empty. Please run `/speca-checklist` to generate check items."
+- If `.speca/findings.json` already exists, overwrite it without asking (auditing is idempotent and re-runnable).
+
+---
+
+## Critical Audit Principles
+
+1. **Be thorough but not paranoid.** Only report issues where you have concrete code evidence. A finding without a proof trace is not a finding.
+
+2. **The three-phase inspection order is mandatory.** Always check Presence first, then Correctness, then Completeness. Do not skip phases or reorder them. A missing implementation (Presence) is different from a wrong implementation (Correctness), which is different from an incomplete implementation (Completeness).
+
+3. **Threat model filtering happens AFTER finding potential issues.** Do not pre-filter. Find the issue first, then evaluate whether it falls within the threat model. This prevents bias toward ignoring real issues.
+
+4. **False positives waste human reviewer time.** Every false positive in the report erodes trust. When in doubt about whether something is a real issue, set `false_positive_risk` to `"medium"` or `"high"` rather than omitting the finding — but be honest about the uncertainty.
+
+5. **False negatives miss vulnerabilities.** Every missed real vulnerability is a potential exploit. Be especially thorough with critical and high priority checklist items. Read the actual code carefully; do not assume code is correct because a modifier or function name looks right.
+
+6. **Proof traces are non-negotiable.** Every finding must reference actual code. Copy the relevant lines verbatim into the `snippet` field. The reasoning must connect the specification requirement to the code deficiency with clear logical steps.
+
+7. **Severity must match impact.** Do not inflate severity to appear thorough. A missing event is not critical. A fund-draining reentrancy is not medium. Match severity to the actual impact as defined in the severity classification above.
+
+---
+
+## Notes
+
+- This skill is **non-interactive**. Do not prompt the user for input during the audit. Read all prerequisites, perform the audit, write the output, and print the summary.
+- All file paths in findings must be **relative** to the project root, matching the format in `config.json`.
+- When a single checklist item produces multiple findings (e.g., both a correctness issue and a completeness issue in the same function), create separate findings for each distinct issue. Do not merge unrelated issues.
+- When multiple checklist items point to the same code issue (e.g., several checks all flagging the same missing modifier), create one finding and reference all relevant checklist IDs in the description. Use the checklist ID of the most specific check as the primary `checklist_id`.
+- Dynamic check items (those with `check_type: "dynamic"`) should be skipped during this audit. Note them in the summary as pending for `/speca-test`. Do not attempt to verify dynamic properties through static analysis alone.
+- This audit focuses on static analysis only. Runtime behavior, gas profiling, and fuzzing are handled by `/speca-test`.
