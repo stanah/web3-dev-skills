@@ -1,0 +1,48 @@
+name: SimpleVault
+version: "1.0"
+functions:
+  deposit:
+    visibility: external
+    payable: true
+    access: whitelist_or_owner
+    requirements:
+      - msg.value must be greater than 0
+      - caller must be whitelisted or owner
+    events:
+      - Deposited(address indexed sender, uint256 amount)
+
+  withdraw:
+    visibility: external
+    params:
+      - name: amount
+        type: uint256
+    access: owner_only
+    requirements:
+      - amount must not exceed contract balance
+      - must follow checks-effects-interactions
+    events:
+      - Withdrawn(address indexed to, uint256 amount)
+
+  emergencyPause:
+    visibility: external
+    access: owner_only
+    requirements:
+      - halts all deposits and withdrawals
+
+  emergencyUnpause:
+    visibility: external
+    access: owner_only
+
+  addToWhitelist:
+    visibility: external
+    access: owner_only
+    params:
+      - name: addr
+        type: address
+
+  removeFromWhitelist:
+    visibility: external
+    access: owner_only
+    params:
+      - name: addr
+        type: address
