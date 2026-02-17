@@ -1,0 +1,504 @@
+---
+name: speca-checklist
+description: Generate property-based security checklist from requirements and mappings with Solidity vulnerability pattern matching
+---
+
+# /speca-checklist - Generate Security Checklist
+
+You are generating a property-based security checklist from extracted requirements, code mappings, and a built-in Solidity vulnerability pattern database. This produces `.speca/checklist.json`. This is Phase 2 of the SPECA (SPEcification-to-Checklist Auditing) pipeline and is the keystone step: the checklist determines what gets audited. The inline vulnerability pattern database surfaces vulnerability classes that spec authors may not have considered, going beyond simple spec compliance checking.
+
+---
+
+## Phase 0: Prerequisites Check
+
+1. Read `.speca/config.json` using the Read tool.
+2. If the file does not exist, stop and tell the user: "No SPECA config found. Please run `/speca-init` first to initialize the project."
+3. Parse the JSON and extract the `threat_model` object (including `actors`, `boundaries`, and `assumptions`). You will need these for threat model filtering.
+4. Read `.speca/requirements.json` using the Read tool.
+5. If the file does not exist, stop and tell the user: "No requirements found. Please run `/speca-extract` first to extract requirements from your specification files."
+6. Read `.speca/mapping.json` using the Read tool.
+7. If the file does not exist, stop and tell the user: "No requirement-to-code mapping found. Please run `/speca-map` first to map requirements to source code."
+8. Parse both JSON files. Extract the `requirements` array from `requirements.json` and the `mappings` array from `mapping.json`.
+
+---
+
+## Inline Vulnerability Pattern Database (v1.0)
+
+The following vulnerability patterns are the core knowledge base for this skill. Each pattern has an ID, description, what to check, and severity. Use these patterns when matching against mapped code to generate check items. Do NOT load patterns from external files; use this database exactly as specified.
+
+---
+
+### Category 1: Reentrancy (REENT)
+
+**REENT-001: State changes after external calls**
+- Description: State variables are modified after an external call (`.call`, `.send`, `.transfer`, or interaction with an external contract). This violates the checks-effects-interactions pattern and allows a malicious callee to re-enter the function before state is updated.
+- What to check: For each function that makes an external call, verify that all state variable writes occur BEFORE the external call. Look for the checks-effects-interactions pattern. If a `nonReentrant` modifier is present, note it as a mitigation but still flag the ordering issue.
+- Severity: critical
+
+**REENT-002: Cross-function reentrancy via shared state**
+- Description: Two or more functions share a state variable, and one function makes an external call while the other reads the shared state. An attacker can re-enter via the second function during the first function's external call, reading stale state.
+- What to check: Identify functions that share state variables. If one function modifies a shared variable and makes an external call, and another function reads that variable, verify that either (a) a reentrancy guard covers both functions, or (b) state is updated before the external call in all paths.
+- Severity: critical
+
+**REENT-003: Read-only reentrancy via view functions**
+- Description: A view or pure function reads state that is temporarily inconsistent during another function's execution. External protocols that call view functions for pricing or balance checks can be exploited during reentrancy.
+- What to check: Identify view/pure functions that return state values used by external integrators (e.g., `balanceOf`, `totalSupply`, `getPrice`). Verify that these values cannot be observed in an inconsistent state during the execution of any state-changing function that makes external calls.
+- Severity: high
+
+---
+
+### Category 2: Access Control (ACCESS)
+
+**ACCESS-001: Missing access modifiers on state-changing functions**
+- Description: A public or external function that modifies state variables lacks an access control modifier (e.g., `onlyOwner`, `onlyRole`), require/revert check on `msg.sender`, or equivalent authorization logic.
+- What to check: For each public/external function that writes to state variables, verify that at least one access control mechanism exists: a named modifier, a `require(msg.sender == ...)` check, or a role-based check (e.g., `hasRole`). Functions intentionally open to all callers should be explicitly documented as such.
+- Severity: critical
+
+**ACCESS-002: tx.origin authentication**
+- Description: The contract uses `tx.origin` instead of `msg.sender` for authentication. `tx.origin` returns the original external account that initiated the transaction, making the contract vulnerable to phishing attacks where a malicious contract tricks the owner into calling it.
+- What to check: Search for any use of `tx.origin` in authentication logic (e.g., `require(tx.origin == owner)`). Flag every such usage. The only acceptable use of `tx.origin` is for non-security purposes such as detecting whether the caller is an EOA (`tx.origin == msg.sender`), and even that should be flagged as informational.
+- Severity: critical
+
+**ACCESS-003: Unprotected initializer functions**
+- Description: In upgradeable contracts using the proxy pattern, the `initialize()` function (or equivalent) is not protected against being called multiple times or by unauthorized callers. An attacker who calls `initialize()` on an uninitialized proxy can take ownership of the contract.
+- What to check: For contracts that use initializer patterns (e.g., `initialize()`, `__init()`, OpenZeppelin `Initializable`), verify that: (a) the function has an `initializer` modifier or equivalent guard preventing re-initialization, and (b) there is access control on who can call it, or it is called atomically during deployment.
+- Severity: critical
+
+---
+
+### Category 3: Integer (INT)
+
+**INT-001: Unchecked arithmetic (pre-0.8)**
+- Description: Arithmetic operations that can overflow or underflow without detection. In Solidity < 0.8.0, arithmetic wraps silently. In Solidity >= 0.8.0, this is only a concern inside `unchecked {}` blocks.
+- What to check: Determine the Solidity compiler version from the `pragma` statement. If < 0.8.0, flag all arithmetic operations that lack SafeMath or equivalent library usage. If >= 0.8.0, check for any `unchecked {}` blocks and verify that overflow/underflow is impossible in context (e.g., loop counters that are bounded).
+- Severity: high
+
+**INT-002: Unsafe type casting and truncation**
+- Description: Casting between integer types of different sizes (e.g., `uint256` to `uint128`, `int256` to `uint256`) can silently truncate values or produce unexpected results from sign conversion.
+- What to check: Identify all explicit type casts between integer types. Verify that either (a) the value is guaranteed to fit in the target type by prior validation, or (b) the cast is in a context where truncation is intentional and documented. Pay special attention to casts from signed to unsigned types and from larger to smaller types.
+- Severity: high
+
+**INT-003: Division by zero and rounding errors**
+- Description: Division operations where the divisor can be zero (causing a revert) or where integer division truncation leads to loss of precision that accumulates over time, especially in financial calculations.
+- What to check: For every division operation, verify that the divisor is checked to be non-zero before the division. For financial calculations (token amounts, interest rates, fee calculations), verify that rounding direction is correct (round in the protocol's favor, not the user's) and that precision loss is bounded and acceptable.
+- Severity: high
+
+---
+
+### Category 4: Logic (LOGIC)
+
+**LOGIC-001: Incorrect comparison operators**
+- Description: Using `<` instead of `<=` (or vice versa) in boundary checks, leading to off-by-one errors that allow or prevent actions at boundary values.
+- What to check: For each comparison in require statements, if statements, and loop conditions, verify that the operator matches the specification. Pay special attention to boundary conditions: does the requirement say "greater than" (`>`) or "at least" (`>=`)? Does "less than N" mean `< N` or `<= N`? Check all comparisons against the corresponding requirement text.
+- Severity: medium
+
+**LOGIC-002: Missing or wrong conditional branches**
+- Description: A conditional (if/else) chain does not cover all possible states, or a branch handles the wrong condition. This can lead to unexpected fallthrough behavior where code executes in cases it should not.
+- What to check: For each conditional chain (if/else if/else), enumerate the possible states of the condition variables and verify that every state is handled correctly. Look for missing `else` clauses that should revert or handle a default case. Verify that the conditions are mutually exclusive where expected.
+- Severity: medium
+
+**LOGIC-003: Default case handling in if/else chains**
+- Description: When a function handles multiple enumerated cases (e.g., token types, action types, states), the default/fallthrough case may silently succeed instead of reverting, allowing unexpected inputs to be processed.
+- What to check: For each if/else chain or switch-like pattern that handles enumerated cases, verify that the final else clause (or the case when no condition matches) either reverts with a meaningful error or is explicitly documented as intentional pass-through. Flag any default path that silently succeeds without an explicit comment explaining why.
+- Severity: medium
+
+---
+
+### Category 5: External Call (EXTCALL)
+
+**EXTCALL-001: Unchecked return values from low-level calls**
+- Description: Low-level calls (`.call()`, `.delegatecall()`, `.staticcall()`) return a boolean indicating success or failure. If the return value is not checked, a failed call is silently ignored, and execution continues with potentially corrupted state.
+- What to check: For every `.call()`, `.delegatecall()`, and `.staticcall()` invocation, verify that the boolean return value is checked. The typical pattern is `(bool success, ) = target.call(data); require(success, "...")`. Flag any call where the return value is discarded or ignored.
+- Severity: critical
+
+**EXTCALL-002: Delegatecall to untrusted targets**
+- Description: `delegatecall` executes code in the context of the calling contract, meaning the target code can modify the caller's storage. If the target address is user-controlled or not immutable, an attacker can execute arbitrary code with the caller's storage.
+- What to check: For every `delegatecall` invocation, verify that the target address is either (a) hardcoded/immutable, (b) set only by a trusted admin via proper access control, or (c) validated against an allowlist. Flag any `delegatecall` where the target address comes from user input, calldata, or an unprotected storage variable.
+- Severity: critical
+
+**EXTCALL-003: Gas stipend assumptions (transfer vs call)**
+- Description: `address.transfer()` and `address.send()` forward only 2300 gas, which is insufficient for recipients that are contracts with non-trivial `receive()` or `fallback()` functions. This can cause transfers to fail unexpectedly, especially after EIP-1884 gas repricing.
+- What to check: Identify all uses of `.transfer()` and `.send()` for sending ETH. Flag them as potentially problematic and recommend using `.call{value: amount}("")` instead, with proper reentrancy protection. If `.transfer()` or `.send()` is used intentionally (e.g., as a reentrancy mitigation), note the trade-off.
+- Severity: medium
+
+---
+
+### Category 6: Gas/DoS (GAS)
+
+**GAS-001: Unbounded loops over dynamic arrays**
+- Description: A loop iterates over an array whose length can grow without bound (e.g., a list of all token holders, all pending withdrawals). As the array grows, the function may exceed the block gas limit and become permanently uncallable.
+- What to check: For every loop (`for`, `while`) that iterates over a storage array or a dynamic-length input array, verify that either (a) the array length has an enforced upper bound, or (b) the function supports pagination/batching, or (c) the array is guaranteed to stay small by design. Flag any loop over an unbounded array.
+- Severity: high
+
+**GAS-002: Block gas limit interactions**
+- Description: A function's gas consumption is dependent on external state that can be manipulated by an attacker, causing the function to consume more gas than the block gas limit allows.
+- What to check: Identify functions whose gas consumption depends on state that external users can influence (e.g., number of entries in a mapping, length of a user-controlled array). Verify that gas consumption has a bounded maximum that fits within the block gas limit. Consider functions called in batch or aggregate operations.
+- Severity: high
+
+**GAS-003: External call failures in loops (pull vs push)**
+- Description: A loop that makes external calls (e.g., distributing rewards to multiple recipients) can be blocked if any single call fails (reverts), preventing all subsequent iterations. This is the "push" payment pattern vulnerability.
+- What to check: For every loop that makes external calls, verify that a single call failure does not revert the entire loop. The preferred pattern is "pull" (let recipients withdraw) rather than "push" (send to all recipients). If push is used, verify that individual failures are caught and handled (e.g., using try/catch or ignoring the return value with logging).
+- Severity: high
+
+---
+
+### Category 7: Oracle/Price (ORACLE)
+
+**ORACLE-001: Manipulable price feeds (single-block)**
+- Description: The contract reads a price from an on-chain source (e.g., a DEX spot price, a single-block TWAP) that can be manipulated within a single transaction via flash loans or large trades.
+- What to check: Identify all price feed sources used by the contract. For each, determine whether the price can be manipulated within a single block. Flag DEX spot prices (`getReserves()`, `slot0()`, single `balanceOf` ratios) as manipulable. Verify that time-weighted averages (TWAPs) use a sufficient window (typically >= 30 minutes). Check if the oracle has manipulation-resistance mechanisms (e.g., Chainlink aggregation).
+- Severity: critical
+
+**ORACLE-002: Missing staleness checks on oracle data**
+- Description: Oracle data (e.g., from Chainlink) can become stale if the oracle stops updating. Using stale prices for financial calculations (liquidations, swaps, collateral valuation) can lead to incorrect valuations and exploitable conditions.
+- What to check: For every oracle read (e.g., Chainlink `latestRoundData()`), verify that: (a) the `updatedAt` timestamp is checked against a maximum staleness threshold, (b) the `answeredInRound` is checked against `roundId` to detect stale rounds, and (c) the returned price is checked to be > 0. Flag any oracle read that does not perform all three checks.
+- Severity: high
+
+---
+
+### Category 8: ERC Standard (ERC)
+
+**ERC-001: ERC-20 approve race condition**
+- Description: The ERC-20 `approve()` function is vulnerable to a front-running race condition: if an allowance is changed from N to M, the spender can front-run and spend both N and M. The mitigation is to use `increaseAllowance()`/`decreaseAllowance()` or to require setting allowance to 0 before setting a new value.
+- What to check: If the contract implements ERC-20 `approve()`, verify that either (a) `increaseAllowance()`/`decreaseAllowance()` alternatives are provided, or (b) the contract documents the known race condition, or (c) the `approve` function requires the current allowance to be 0 before setting a new non-zero value.
+- Severity: medium
+
+**ERC-002: Missing return value checks (non-standard ERC-20)**
+- Description: Some ERC-20 tokens (notably USDT) do not return a boolean from `transfer()` and `transferFrom()`, violating the standard. Calling these functions and checking the return value with `require(token.transfer(...))` will revert because the return data is empty.
+- What to check: For every ERC-20 `transfer()`, `transferFrom()`, and `approve()` call, verify that the contract uses `SafeERC20` (from OpenZeppelin) or equivalent wrappers that handle non-standard return values. Flag any direct `.transfer()` or `.transferFrom()` call on an arbitrary ERC-20 token without safe wrappers.
+- Severity: high
+
+**ERC-003: ERC-721/1155 callback requirements**
+- Description: ERC-721 `safeTransferFrom` and ERC-1155 `safeTransferFrom`/`safeBatchTransferFrom` require the recipient contract to implement callback interfaces (`onERC721Received`, `onERC1155Received`). Failing to call the safe variants when transferring to contracts can lock tokens permanently.
+- What to check: For every NFT transfer, verify that the safe variant is used when the recipient could be a contract. If the non-safe variant (`transferFrom` for ERC-721) is used, verify that the recipient is known to be an EOA or that the use is intentional and documented. For ERC-1155, verify callback return values are checked.
+- Severity: medium
+
+---
+
+### Category 9: Upgradability (UPGRADE)
+
+**UPGRADE-001: Storage layout collision in proxies**
+- Description: In the proxy pattern, the implementation contract and the proxy share storage. If the implementation contract's storage layout changes between upgrades (e.g., reordering variables, inserting new variables before existing ones), storage slots collide, corrupting data.
+- What to check: If the contract uses a proxy pattern, verify that: (a) new storage variables are only added at the end of the existing layout, (b) existing variables are never removed or reordered, (c) inheritance order is preserved across upgrades, and (d) storage gaps (`uint256[50] __gap`) are used in base contracts to reserve space.
+- Severity: critical
+
+**UPGRADE-002: Uninitialized proxy implementation**
+- Description: The implementation contract behind a proxy is deployed but never initialized, leaving default values for ownership and critical state. An attacker can call `initialize()` on the implementation contract directly (not via the proxy), taking ownership and potentially executing `selfdestruct` to destroy the implementation.
+- What to check: Verify that the implementation contract's constructor disables initializers (e.g., `_disableInitializers()` in OpenZeppelin) to prevent direct initialization. Also verify that the proxy is initialized atomically during deployment.
+- Severity: critical
+
+**UPGRADE-003: Selfdestruct in implementation contract**
+- Description: If the implementation contract contains a `selfdestruct` instruction (directly or via `delegatecall` to a contract that does), an attacker who gains control of the implementation can destroy it, bricking all proxies that depend on it.
+- What to check: Verify that no function in the implementation contract can execute `selfdestruct`. Search for `selfdestruct` and `delegatecall` patterns that could lead to self-destruction. Verify that `delegatecall` targets are restricted and cannot execute `selfdestruct`.
+- Severity: critical
+
+---
+
+### Category 10: Cryptographic (CRYPTO)
+
+**CRYPTO-001: Weak randomness from block variables**
+- Description: Using `block.timestamp`, `block.difficulty` (now `block.prevrandao`), `blockhash`, or other block variables as sources of randomness is insecure. Miners/validators can influence these values, and `blockhash` is only available for the most recent 256 blocks.
+- What to check: Search for uses of `block.timestamp`, `block.difficulty`, `block.prevrandao`, `blockhash`, or `block.number` in contexts where randomness is needed (e.g., lottery selection, random assignment, token ID generation). Flag all such uses as insecure. Recommend commit-reveal schemes or VRF (e.g., Chainlink VRF) for security-critical randomness.
+- Severity: high
+
+**CRYPTO-002: Signature replay and missing nonce**
+- Description: If a contract verifies signatures (via `ecrecover` or ECDSA libraries) but does not include a nonce or chain ID in the signed message, the same signature can be replayed multiple times or across different chains/contracts.
+- What to check: For every signature verification, verify that the signed message includes: (a) a nonce that is incremented after use, (b) the contract address (`address(this)`) to prevent cross-contract replay, (c) the chain ID to prevent cross-chain replay, and (d) a deadline/expiration to limit temporal replay. Flag signatures that lack any of these protections.
+- Severity: high
+
+---
+
+## Phase 1: Derive Testable Properties from Mapped Requirements
+
+For each entry in the `mappings` array from `mapping.json` that has `status: "mapped"`, generate testable property check items.
+
+### Step 1a: Positive Case Properties
+
+For each requirement, derive at least one positive-case property: a statement that the correct behavior MUST occur when all preconditions are satisfied.
+
+Format: `"<function>() <expected behavior> when <preconditions>"`
+
+Examples:
+- "withdraw(amount) transfers `amount` to msg.sender when msg.sender == owner and balance >= amount"
+- "deposit() increases balances[msg.sender] by msg.value when msg.value > 0"
+
+### Step 1b: Negative Case Properties
+
+For each requirement, derive at least one negative-case property: a statement that the function MUST revert (or reject) when preconditions are NOT satisfied.
+
+Format: `"<function>() reverts when <violated precondition>"`
+
+Examples:
+- "withdraw(amount) reverts when msg.sender != owner"
+- "deposit() reverts when msg.value == 0"
+
+### Step 1c: Edge Case Properties
+
+For each requirement, derive edge-case properties based on boundary values and special inputs. Consider:
+
+- **Boundary values**: Zero, one, max uint256, max int256, min int256, empty arrays, empty strings, address(0).
+- **State boundaries**: First deposit/withdrawal, last element removal, transition between states (e.g., paused to unpaused).
+- **Concurrent/ordering**: Multiple calls in the same transaction, calls from different actors in sequence.
+
+Format: `"<function>() <expected behavior> when <edge condition>"`
+
+Examples:
+- "withdraw(amount) reverts when amount == 0"
+- "withdraw(amount) handles correctly when amount == balance (full withdrawal)"
+- "deposit() handles correctly when balances[msg.sender] is at max uint256 before deposit"
+
+---
+
+## Phase 2: Match Against Vulnerability Pattern Database
+
+For each mapped requirement, examine the code at the mapped locations and match against the vulnerability pattern database from the inline database above.
+
+### Step 2a: Determine Applicable Categories
+
+Based on the requirement `type` and the code context at the mapped locations, determine which pattern categories are applicable:
+
+| Requirement Type | Primary Categories | Secondary Categories |
+|---|---|---|
+| `access_control` | ACCESS | UPGRADE, REENT |
+| `validation` | INT, LOGIC | EXTCALL |
+| `state_transition` | REENT, LOGIC | GAS, EXTCALL |
+| `event_emission` | LOGIC | (none) |
+| `error_handling` | EXTCALL, LOGIC | INT |
+| `data_integrity` | INT, ORACLE | REENT, CRYPTO |
+| `lifecycle` | UPGRADE, ACCESS | GAS |
+| `other` | All categories | (none) |
+
+For `other` type requirements, scan all categories.
+
+### Step 2b: Pattern Matching
+
+For each applicable pattern in the determined categories:
+
+1. Read the code at each mapped location (use the `line_range` from the mapping to focus your reading).
+2. Determine whether the code exhibits characteristics described in the pattern's "What to check" section.
+3. If the pattern is relevant (the code uses constructs or patterns described by the vulnerability), create a check item referencing that pattern.
+
+Do NOT create a check item for a pattern that is clearly inapplicable. For example, do not create an ORACLE check for a function that does not read any external price data.
+
+### Step 2c: Create Pattern-Based Check Items
+
+For each matched pattern, create a check item:
+
+- **property**: A specific, testable statement about what to verify. Reference the actual function name and the specific vulnerability concern.
+- **pattern_refs**: Array of pattern IDs that triggered this check (e.g., `["REENT-001"]`).
+- **check_type**: `"static"` if the check can be verified by code inspection alone, `"dynamic"` if it requires test execution or simulation.
+
+---
+
+## Phase 3: Apply Threat Model Filter
+
+For each generated check item (from both Phase 1 and Phase 2), evaluate whether it falls within the defined threat model.
+
+### Step 3a: Read Threat Model
+
+From `.speca/config.json`, retrieve:
+- `threat_model.actors`: Dictionary of actor names to trust levels.
+- `threat_model.boundaries`: List of access boundary strings.
+- `threat_model.assumptions`: List of security assumptions.
+
+### Step 3b: Filter Logic
+
+For each check item, determine the assumed attacker capability:
+
+1. **Identify the attacker in the check**: What actor or capability does the check assume? For example, a reentrancy check assumes an attacker who can deploy a malicious contract and call the target function. An access control check assumes an unauthorized caller.
+
+2. **Match against actors and boundaries**: Is the attacker type defined in the threat model? If a check assumes an attacker capability that requires a trust level HIGHER than any UNTRUSTED or SEMI_TRUSTED actor has, the check may be outside the threat model.
+
+3. **Check assumptions**: If the threat model includes an assumption that eliminates a vulnerability class (e.g., "Solidity compiler version is ^0.8.x (built-in overflow protection)"), reduce the priority of checks in that class (e.g., INT-001 for pre-0.8 overflow would not apply).
+
+### Step 3c: Apply Filters
+
+For each check item:
+- If the check is **within** the threat model: Keep it. Set `threat_model_filter` to a string describing the relevant threat boundary (e.g., `"external_caller -> withdraw()"`).
+- If the check is **outside** the threat model: **Exclude it** from the final checklist. Record the reason internally for the summary (e.g., "Excluded: assumes compromised TRUSTED admin, which is outside threat model").
+- If a threat model assumption **reduces** a pattern's applicability: Keep the check but lower its priority by one level (e.g., `critical` becomes `high`, `high` becomes `medium`). Set `threat_model_filter` to explain the downgrade (e.g., `"assumption: Solidity ^0.8.x — overflow protection built-in, downgraded from high to medium"`).
+
+---
+
+## Phase 4: Handle Unmapped Requirements
+
+For each entry in the `mappings` array that has `status: "unmapped"`, create a special check item:
+
+- **id**: `CHK-UNMAP-<NNN>` where NNN is a zero-padded three-digit counter starting at 001.
+- **requirement_id**: The unmapped requirement's ID.
+- **property**: `"Verify whether requirement <requirement_id> is implemented: <first 100 chars of requirement text>"`
+- **check_type**: `"static"`
+- **pattern_refs**: `[]` (no patterns; this is a spec-compliance check).
+- **threat_model_filter**: `"N/A — unmapped requirement"`
+- **priority**: `"high"` (missing implementation is a serious finding).
+
+---
+
+## Phase 5: Assign IDs and Priority
+
+### Step 5a: Assign Check IDs
+
+For each check item (excluding unmapped checks which already have IDs), assign an ID using the pattern:
+
+`CHK-<CATEGORY>-<PATTERN_NUM>-<SUFFIX>`
+
+Where:
+- `CATEGORY`: The primary pattern category (e.g., `AUTH`, `REENT`, `INT`) or the requirement type abbreviation if no pattern is referenced.
+  - `access_control` -> `AUTH`
+  - `validation` -> `VAL`
+  - `state_transition` -> `STATE`
+  - `event_emission` -> `EVT`
+  - `error_handling` -> `ERR`
+  - `data_integrity` -> `DATA`
+  - `lifecycle` -> `LCY`
+  - `other` -> `GEN`
+  - Pattern-based: Use the pattern category (e.g., `REENT`, `ACCESS`, `INT`, `LOGIC`, `EXTCALL`, `GAS`, `ORACLE`, `ERC`, `UPGRADE`, `CRYPTO`)
+- `PATTERN_NUM`: The three-digit number from the pattern ID (e.g., `001`), or a sequential number if property-derived.
+- `SUFFIX`: A lowercase letter suffix for multiple checks under the same pattern/requirement (a, b, c, ...).
+
+Examples: `CHK-AUTH-001-a`, `CHK-REENT-001-a`, `CHK-VAL-001-b`
+
+### Step 5b: Assign Priority
+
+Assign priority based on the combination of the requirement's `severity_hint` and the pattern's severity:
+
+| Requirement Severity | Pattern Severity | Resulting Priority |
+|---|---|---|
+| high | critical | critical |
+| high | high | critical |
+| high | medium | high |
+| medium | critical | high |
+| medium | high | high |
+| medium | medium | medium |
+| low | critical | high |
+| low | high | medium |
+| low | medium | low |
+
+For property-derived checks (Phase 1) without a pattern reference, use the requirement's `severity_hint` directly:
+- `high` -> `high`
+- `medium` -> `medium`
+- `low` -> `low`
+
+If the threat model filter caused a priority downgrade (Phase 3, Step 3c), apply the downgrade after the above calculation.
+
+---
+
+## Phase 6: Write Output
+
+### Step 6a: Build the Output JSON
+
+Construct the output object with this exact schema:
+
+```json
+{
+  "generated_at": "<ISO 8601 timestamp>",
+  "total_checks": <integer>,
+  "pattern_db_version": "1.0",
+  "summary": {
+    "by_priority": {
+      "critical": <integer>,
+      "high": <integer>,
+      "medium": <integer>,
+      "low": <integer>
+    },
+    "by_check_type": {
+      "static": <integer>,
+      "dynamic": <integer>
+    },
+    "unmapped_checks": <integer>,
+    "threat_model_exclusions": <integer>
+  },
+  "checklist": [
+    {
+      "id": "<string, e.g., CHK-AUTH-001-a>",
+      "requirement_id": "<string, e.g., SPEC-AUTH-001>",
+      "property": "<string, testable property statement>",
+      "check_type": "<static|dynamic>",
+      "pattern_refs": ["<string, e.g., ACCESS-001>"],
+      "threat_model_filter": "<string, threat boundary or N/A>",
+      "priority": "<critical|high|medium|low>"
+    }
+  ]
+}
+```
+
+Field details:
+- `generated_at`: Current date and time in ISO 8601 format.
+- `total_checks`: Total number of items in the `checklist` array.
+- `pattern_db_version`: Always `"1.0"` for this version of the database.
+- `summary`: Aggregate counts for quick reference.
+  - `by_priority`: Count of checks at each priority level.
+  - `by_check_type`: Count of static vs dynamic checks.
+  - `unmapped_checks`: Count of checks generated for unmapped requirements (Phase 4).
+  - `threat_model_exclusions`: Count of checks excluded by threat model filtering (Phase 3).
+- `checklist`: Array of all check items, ordered by priority (critical first, then high, medium, low), and within each priority by ID.
+
+For each check item:
+- `id`: The assigned check ID from Phase 5.
+- `requirement_id`: The ID of the originating requirement from `requirements.json`.
+- `property`: The testable property statement (positive, negative, edge, or pattern-based).
+- `check_type`: `"static"` if verifiable by code inspection, `"dynamic"` if requires test execution.
+- `pattern_refs`: Array of vulnerability pattern IDs that informed this check. Empty array `[]` if the check is purely property-derived or unmapped.
+- `threat_model_filter`: String describing the relevant threat boundary, the downgrade reason, or `"N/A — unmapped requirement"` for unmapped checks.
+- `priority`: One of `"critical"`, `"high"`, `"medium"`, `"low"`.
+
+### Step 6b: Write the File
+
+Write the JSON to `.speca/checklist.json` using the Write tool. Use 2-space indentation for readability.
+
+---
+
+## Phase 7: Print Summary
+
+After writing the file, print a summary to the user in this format:
+
+```
+Security checklist generation complete!
+
+Total check items: <N>
+
+By priority:
+  Critical: <count>
+  High:     <count>
+  Medium:   <count>
+  Low:      <count>
+
+By check type:
+  Static:  <count>
+  Dynamic: <count>
+
+Unmapped requirement checks: <count>
+Threat model exclusions:     <count>
+
+Pattern categories matched:
+  - <CATEGORY>: <count> checks  (for each category that has at least one check)
+
+Output written to: .speca/checklist.json
+
+Next step: Run /speca-audit to execute the audit against the generated checklist.
+```
+
+Only include pattern category rows that have a non-zero count.
+
+---
+
+## Error Handling
+
+- If `.speca/config.json` does not exist, stop and tell the user to run `/speca-init`.
+- If `.speca/requirements.json` does not exist, stop and tell the user to run `/speca-extract`.
+- If `.speca/mapping.json` does not exist, stop and tell the user to run `/speca-map`.
+- If the requirements array is empty, stop and tell the user: "No requirements found. Please run `/speca-extract` to populate the requirements."
+- If the mappings array is empty, stop and tell the user: "No mappings found. Please run `/speca-map` to map requirements to source code."
+- If `.speca/checklist.json` already exists, overwrite it without asking (checklist generation is idempotent and re-runnable).
+
+---
+
+## Notes
+
+- This skill is **non-interactive**. Do not prompt the user for input during checklist generation. Read the prerequisites, process all data, write the output, and print the summary.
+- All file paths in the output must be **relative** to the project root, matching the format in `config.json`.
+- The vulnerability pattern database is the core differentiator of SPECA. It surfaces vulnerability classes that specification authors may not have considered. Be thorough in pattern matching: read the actual code at mapped locations and evaluate each applicable pattern carefully.
+- When multiple patterns apply to the same code location, create separate check items for each pattern. Do not merge distinct vulnerability concerns into a single check.
+- The threat model filter is essential for reducing false positives. The SPECA methodology found that 56.8% of false positives came from threat model misalignment. Apply the filter rigorously.
+- Unmapped requirements are high-priority findings. They indicate potential gaps between the specification and the implementation. Always include them prominently in the checklist.
+- Be conservative with `check_type` classification: if there is any doubt about whether a property can be verified statically, classify it as `"dynamic"`.
