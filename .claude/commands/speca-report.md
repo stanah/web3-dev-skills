@@ -25,7 +25,7 @@ You are generating the final audit report from SPECA pipeline artifacts. This pr
 12. If the file exists, parse the JSON and extract the `mappings` array. Set `has_mapping = true`.
 13. Read `.speca/config.json` using the Read tool.
 14. If the file does not exist, print a warning: "No config found (`.speca/config.json`). Threat model section will be omitted from the report." Set an internal flag `has_config = false` and continue.
-15. If the file exists, parse the JSON and extract the `threat_model` object and determine the project target name: use the project directory name as the target name. Set `has_config = true`.
+15. If the file exists, parse the JSON and extract the `threat_model` object and determine the project target name: use the project directory name as the target name. Set `has_config = true`. Also extract `language` from the config. If `language` is not present in the config, default to `"en"` (English).
 16. Read `.speca/test-results.json` using the Read tool.
 17. If the file does not exist, set an internal flag `has_test_results = false` and continue silently (test results are optional).
 18. If the file exists, parse the JSON and extract the `test_files` array. Set `has_test_results = true`.
@@ -77,6 +77,8 @@ Before writing the report, compute the following statistics from the loaded data
 ### Step 1d: Write the Markdown Report
 
 Write the report to `.speca/reports/YYYY-MM-DD-report.md` using the Write tool. Use the exact structure below, filling in computed values. Omit sections whose prerequisite data is unavailable (as indicated by the `has_*` flags).
+
+**Language handling:** All section headers, labels, static text, table headers, and descriptive content in the Markdown report MUST be written in the language specified by `language`. For example, if `language` is `"ja"`, use Japanese for headings like "エグゼクティブサマリー" instead of "Executive Summary", "脅威モデル" instead of "Threat Model", "検出事項" instead of "Findings", etc. Finding titles, descriptions, recommendations, and reasoning should also be generated in the target language. However, identifiers (e.g., `FIND-NNN`, `CHK-XXX-NNN`, `SPEC-XXX-NNN`), severity level names (Critical/High/Medium/Low/Informational), code snippets, and file paths must remain in English. If `language` is `"en"` or not set, use the English structure shown below as-is.
 
 ```markdown
 # SPECA Security Audit Report
@@ -357,7 +359,7 @@ If a file already exists at the target path, overwrite it without asking. SARIF 
 
 ## Phase 3: Completion
 
-After writing both files, print the following output to the user:
+After writing both files, print the following output to the user. **All console output text (headers, labels, next steps) MUST be written in the language specified by `language`.** If `language` is `"en"` or not set, use the English text shown below as-is.
 
 ### Step 3a: Print File Paths
 
