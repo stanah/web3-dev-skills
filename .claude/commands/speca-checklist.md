@@ -23,189 +23,18 @@ You are generating a property-based security checklist from extracted requiremen
 
 ---
 
-## Inline Vulnerability Pattern Database (v1.0)
+## Vulnerability Pattern Database (v1.0) — External Reference
 
-The following vulnerability patterns are the core knowledge base for this command. Each pattern has an ID, description, what to check, and severity. Use these patterns when matching against mapped code to generate check items. Do NOT load patterns from external files; use this database exactly as specified.
+The vulnerability patterns used by this command are stored in `.claude/speca/patterns-v1.json`. This external file contains all pattern definitions including IDs, descriptions, what-to-check instructions, and severity levels.
 
----
+**Before starting Phase 1**, read `.claude/speca/patterns-v1.json` using the Read tool. Parse the JSON and load all categories and patterns into memory. The file contains:
+- 10 categories (REENT, ACCESS, INT, LOGIC, EXTCALL, GAS, ORACLE, ERC, UPGRADE, CRYPTO)
+- 29 patterns total, each with `id`, `title`, `description`, `what_to_check`, and `severity`
+- A `category_mapping` object that maps requirement types to primary and secondary pattern categories
 
-### Category 1: Reentrancy (REENT)
+Use these patterns exactly as defined in the file when matching against mapped code to generate check items. If the file does not exist, stop and tell the user: "Pattern database not found at `.claude/speca/patterns-v1.json`. Please ensure the SPECA shared resources are installed."
 
-**REENT-001: State changes after external calls**
-- Description: State variables are modified after an external call (`.call`, `.send`, `.transfer`, or interaction with an external contract). This violates the checks-effects-interactions pattern and allows a malicious callee to re-enter the function before state is updated.
-- What to check: For each function that makes an external call, verify that all state variable writes occur BEFORE the external call. Look for the checks-effects-interactions pattern. If a `nonReentrant` modifier is present, note it as a mitigation but still flag the ordering issue.
-- Severity: critical
-
-**REENT-002: Cross-function reentrancy via shared state**
-- Description: Two or more functions share a state variable, and one function makes an external call while the other reads the shared state. An attacker can re-enter via the second function during the first function's external call, reading stale state.
-- What to check: Identify functions that share state variables. If one function modifies a shared variable and makes an external call, and another function reads that variable, verify that either (a) a reentrancy guard covers both functions, or (b) state is updated before the external call in all paths.
-- Severity: critical
-
-**REENT-003: Read-only reentrancy via view functions**
-- Description: A view or pure function reads state that is temporarily inconsistent during another function's execution. External protocols that call view functions for pricing or balance checks can be exploited during reentrancy.
-- What to check: Identify view/pure functions that return state values used by external integrators (e.g., `balanceOf`, `totalSupply`, `getPrice`). Verify that these values cannot be observed in an inconsistent state during the execution of any state-changing function that makes external calls.
-- Severity: high
-
----
-
-### Category 2: Access Control (ACCESS)
-
-**ACCESS-001: Missing access modifiers on state-changing functions**
-- Description: A public or external function that modifies state variables lacks an access control modifier (e.g., `onlyOwner`, `onlyRole`), require/revert check on `msg.sender`, or equivalent authorization logic.
-- What to check: For each public/external function that writes to state variables, verify that at least one access control mechanism exists: a named modifier, a `require(msg.sender == ...)` check, or a role-based check (e.g., `hasRole`). Functions intentionally open to all callers should be explicitly documented as such.
-- Severity: critical
-
-**ACCESS-002: tx.origin authentication**
-- Description: The contract uses `tx.origin` instead of `msg.sender` for authentication. `tx.origin` returns the original external account that initiated the transaction, making the contract vulnerable to phishing attacks where a malicious contract tricks the owner into calling it.
-- What to check: Search for any use of `tx.origin` in authentication logic (e.g., `require(tx.origin == owner)`). Flag every such usage. The only acceptable use of `tx.origin` is for non-security purposes such as detecting whether the caller is an EOA (`tx.origin == msg.sender`), and even that should be flagged as informational.
-- Severity: critical
-
-**ACCESS-003: Unprotected initializer functions**
-- Description: In upgradeable contracts using the proxy pattern, the `initialize()` function (or equivalent) is not protected against being called multiple times or by unauthorized callers. An attacker who calls `initialize()` on an uninitialized proxy can take ownership of the contract.
-- What to check: For contracts that use initializer patterns (e.g., `initialize()`, `__init()`, OpenZeppelin `Initializable`), verify that: (a) the function has an `initializer` modifier or equivalent guard preventing re-initialization, and (b) there is access control on who can call it, or it is called atomically during deployment.
-- Severity: critical
-
----
-
-### Category 3: Integer (INT)
-
-**INT-001: Unchecked arithmetic (pre-0.8)**
-- Description: Arithmetic operations that can overflow or underflow without detection. In Solidity < 0.8.0, arithmetic wraps silently. In Solidity >= 0.8.0, this is only a concern inside `unchecked {}` blocks.
-- What to check: Determine the Solidity compiler version from the `pragma` statement. If < 0.8.0, flag all arithmetic operations that lack SafeMath or equivalent library usage. If >= 0.8.0, check for any `unchecked {}` blocks and verify that overflow/underflow is impossible in context (e.g., loop counters that are bounded).
-- Severity: high
-
-**INT-002: Unsafe type casting and truncation**
-- Description: Casting between integer types of different sizes (e.g., `uint256` to `uint128`, `int256` to `uint256`) can silently truncate values or produce unexpected results from sign conversion.
-- What to check: Identify all explicit type casts between integer types. Verify that either (a) the value is guaranteed to fit in the target type by prior validation, or (b) the cast is in a context where truncation is intentional and documented. Pay special attention to casts from signed to unsigned types and from larger to smaller types.
-- Severity: high
-
-**INT-003: Division by zero and rounding errors**
-- Description: Division operations where the divisor can be zero (causing a revert) or where integer division truncation leads to loss of precision that accumulates over time, especially in financial calculations.
-- What to check: For every division operation, verify that the divisor is checked to be non-zero before the division. For financial calculations (token amounts, interest rates, fee calculations), verify that rounding direction is correct (round in the protocol's favor, not the user's) and that precision loss is bounded and acceptable.
-- Severity: high
-
----
-
-### Category 4: Logic (LOGIC)
-
-**LOGIC-001: Incorrect comparison operators**
-- Description: Using `<` instead of `<=` (or vice versa) in boundary checks, leading to off-by-one errors that allow or prevent actions at boundary values.
-- What to check: For each comparison in require statements, if statements, and loop conditions, verify that the operator matches the specification. Pay special attention to boundary conditions: does the requirement say "greater than" (`>`) or "at least" (`>=`)? Does "less than N" mean `< N` or `<= N`? Check all comparisons against the corresponding requirement text.
-- Severity: medium
-
-**LOGIC-002: Missing or wrong conditional branches**
-- Description: A conditional (if/else) chain does not cover all possible states, or a branch handles the wrong condition. This can lead to unexpected fallthrough behavior where code executes in cases it should not.
-- What to check: For each conditional chain (if/else if/else), enumerate the possible states of the condition variables and verify that every state is handled correctly. Look for missing `else` clauses that should revert or handle a default case. Verify that the conditions are mutually exclusive where expected.
-- Severity: medium
-
-**LOGIC-003: Default case handling in if/else chains**
-- Description: When a function handles multiple enumerated cases (e.g., token types, action types, states), the default/fallthrough case may silently succeed instead of reverting, allowing unexpected inputs to be processed.
-- What to check: For each if/else chain or switch-like pattern that handles enumerated cases, verify that the final else clause (or the case when no condition matches) either reverts with a meaningful error or is explicitly documented as intentional pass-through. Flag any default path that silently succeeds without an explicit comment explaining why.
-- Severity: medium
-
----
-
-### Category 5: External Call (EXTCALL)
-
-**EXTCALL-001: Unchecked return values from low-level calls**
-- Description: Low-level calls (`.call()`, `.delegatecall()`, `.staticcall()`) return a boolean indicating success or failure. If the return value is not checked, a failed call is silently ignored, and execution continues with potentially corrupted state.
-- What to check: For every `.call()`, `.delegatecall()`, and `.staticcall()` invocation, verify that the boolean return value is checked. The typical pattern is `(bool success, ) = target.call(data); require(success, "...")`. Flag any call where the return value is discarded or ignored.
-- Severity: critical
-
-**EXTCALL-002: Delegatecall to untrusted targets**
-- Description: `delegatecall` executes code in the context of the calling contract, meaning the target code can modify the caller's storage. If the target address is user-controlled or not immutable, an attacker can execute arbitrary code with the caller's storage.
-- What to check: For every `delegatecall` invocation, verify that the target address is either (a) hardcoded/immutable, (b) set only by a trusted admin via proper access control, or (c) validated against an allowlist. Flag any `delegatecall` where the target address comes from user input, calldata, or an unprotected storage variable.
-- Severity: critical
-
-**EXTCALL-003: Gas stipend assumptions (transfer vs call)**
-- Description: `address.transfer()` and `address.send()` forward only 2300 gas, which is insufficient for recipients that are contracts with non-trivial `receive()` or `fallback()` functions. This can cause transfers to fail unexpectedly, especially after EIP-1884 gas repricing.
-- What to check: Identify all uses of `.transfer()` and `.send()` for sending ETH. Flag them as potentially problematic and recommend using `.call{value: amount}("")` instead, with proper reentrancy protection. If `.transfer()` or `.send()` is used intentionally (e.g., as a reentrancy mitigation), note the trade-off.
-- Severity: medium
-
----
-
-### Category 6: Gas/DoS (GAS)
-
-**GAS-001: Unbounded loops over dynamic arrays**
-- Description: A loop iterates over an array whose length can grow without bound (e.g., a list of all token holders, all pending withdrawals). As the array grows, the function may exceed the block gas limit and become permanently uncallable.
-- What to check: For every loop (`for`, `while`) that iterates over a storage array or a dynamic-length input array, verify that either (a) the array length has an enforced upper bound, or (b) the function supports pagination/batching, or (c) the array is guaranteed to stay small by design. Flag any loop over an unbounded array.
-- Severity: high
-
-**GAS-002: Block gas limit interactions**
-- Description: A function's gas consumption is dependent on external state that can be manipulated by an attacker, causing the function to consume more gas than the block gas limit allows.
-- What to check: Identify functions whose gas consumption depends on state that external users can influence (e.g., number of entries in a mapping, length of a user-controlled array). Verify that gas consumption has a bounded maximum that fits within the block gas limit. Consider functions called in batch or aggregate operations.
-- Severity: high
-
-**GAS-003: External call failures in loops (pull vs push)**
-- Description: A loop that makes external calls (e.g., distributing rewards to multiple recipients) can be blocked if any single call fails (reverts), preventing all subsequent iterations. This is the "push" payment pattern vulnerability.
-- What to check: For every loop that makes external calls, verify that a single call failure does not revert the entire loop. The preferred pattern is "pull" (let recipients withdraw) rather than "push" (send to all recipients). If push is used, verify that individual failures are caught and handled (e.g., using try/catch or ignoring the return value with logging).
-- Severity: high
-
----
-
-### Category 7: Oracle/Price (ORACLE)
-
-**ORACLE-001: Manipulable price feeds (single-block)**
-- Description: The contract reads a price from an on-chain source (e.g., a DEX spot price, a single-block TWAP) that can be manipulated within a single transaction via flash loans or large trades.
-- What to check: Identify all price feed sources used by the contract. For each, determine whether the price can be manipulated within a single block. Flag DEX spot prices (`getReserves()`, `slot0()`, single `balanceOf` ratios) as manipulable. Verify that time-weighted averages (TWAPs) use a sufficient window (typically >= 30 minutes). Check if the oracle has manipulation-resistance mechanisms (e.g., Chainlink aggregation).
-- Severity: critical
-
-**ORACLE-002: Missing staleness checks on oracle data**
-- Description: Oracle data (e.g., from Chainlink) can become stale if the oracle stops updating. Using stale prices for financial calculations (liquidations, swaps, collateral valuation) can lead to incorrect valuations and exploitable conditions.
-- What to check: For every oracle read (e.g., Chainlink `latestRoundData()`), verify that: (a) the `updatedAt` timestamp is checked against a maximum staleness threshold, (b) the `answeredInRound` is checked against `roundId` to detect stale rounds, and (c) the returned price is checked to be > 0. Flag any oracle read that does not perform all three checks.
-- Severity: high
-
----
-
-### Category 8: ERC Standard (ERC)
-
-**ERC-001: ERC-20 approve race condition**
-- Description: The ERC-20 `approve()` function is vulnerable to a front-running race condition: if an allowance is changed from N to M, the spender can front-run and spend both N and M. The mitigation is to use `increaseAllowance()`/`decreaseAllowance()` or to require setting allowance to 0 before setting a new value.
-- What to check: If the contract implements ERC-20 `approve()`, verify that either (a) `increaseAllowance()`/`decreaseAllowance()` alternatives are provided, or (b) the contract documents the known race condition, or (c) the `approve` function requires the current allowance to be 0 before setting a new non-zero value.
-- Severity: medium
-
-**ERC-002: Missing return value checks (non-standard ERC-20)**
-- Description: Some ERC-20 tokens (notably USDT) do not return a boolean from `transfer()` and `transferFrom()`, violating the standard. Calling these functions and checking the return value with `require(token.transfer(...))` will revert because the return data is empty.
-- What to check: For every ERC-20 `transfer()`, `transferFrom()`, and `approve()` call, verify that the contract uses `SafeERC20` (from OpenZeppelin) or equivalent wrappers that handle non-standard return values. Flag any direct `.transfer()` or `.transferFrom()` call on an arbitrary ERC-20 token without safe wrappers.
-- Severity: high
-
-**ERC-003: ERC-721/1155 callback requirements**
-- Description: ERC-721 `safeTransferFrom` and ERC-1155 `safeTransferFrom`/`safeBatchTransferFrom` require the recipient contract to implement callback interfaces (`onERC721Received`, `onERC1155Received`). Failing to call the safe variants when transferring to contracts can lock tokens permanently.
-- What to check: For every NFT transfer, verify that the safe variant is used when the recipient could be a contract. If the non-safe variant (`transferFrom` for ERC-721) is used, verify that the recipient is known to be an EOA or that the use is intentional and documented. For ERC-1155, verify callback return values are checked.
-- Severity: medium
-
----
-
-### Category 9: Upgradability (UPGRADE)
-
-**UPGRADE-001: Storage layout collision in proxies**
-- Description: In the proxy pattern, the implementation contract and the proxy share storage. If the implementation contract's storage layout changes between upgrades (e.g., reordering variables, inserting new variables before existing ones), storage slots collide, corrupting data.
-- What to check: If the contract uses a proxy pattern, verify that: (a) new storage variables are only added at the end of the existing layout, (b) existing variables are never removed or reordered, (c) inheritance order is preserved across upgrades, and (d) storage gaps (`uint256[50] __gap`) are used in base contracts to reserve space.
-- Severity: critical
-
-**UPGRADE-002: Uninitialized proxy implementation**
-- Description: The implementation contract behind a proxy is deployed but never initialized, leaving default values for ownership and critical state. An attacker can call `initialize()` on the implementation contract directly (not via the proxy), taking ownership and potentially executing `selfdestruct` to destroy the implementation.
-- What to check: Verify that the implementation contract's constructor disables initializers (e.g., `_disableInitializers()` in OpenZeppelin) to prevent direct initialization. Also verify that the proxy is initialized atomically during deployment.
-- Severity: critical
-
-**UPGRADE-003: Selfdestruct in implementation contract**
-- Description: If the implementation contract contains a `selfdestruct` instruction (directly or via `delegatecall` to a contract that does), an attacker who gains control of the implementation can destroy it, bricking all proxies that depend on it.
-- What to check: Verify that no function in the implementation contract can execute `selfdestruct`. Search for `selfdestruct` and `delegatecall` patterns that could lead to self-destruction. Verify that `delegatecall` targets are restricted and cannot execute `selfdestruct`.
-- Severity: critical
-
----
-
-### Category 10: Cryptographic (CRYPTO)
-
-**CRYPTO-001: Weak randomness from block variables**
-- Description: Using `block.timestamp`, `block.difficulty` (now `block.prevrandao`), `blockhash`, or other block variables as sources of randomness is insecure. Miners/validators can influence these values, and `blockhash` is only available for the most recent 256 blocks.
-- What to check: Search for uses of `block.timestamp`, `block.difficulty`, `block.prevrandao`, `blockhash`, or `block.number` in contexts where randomness is needed (e.g., lottery selection, random assignment, token ID generation). Flag all such uses as insecure. Recommend commit-reveal schemes or VRF (e.g., Chainlink VRF) for security-critical randomness.
-- Severity: high
-
-**CRYPTO-002: Signature replay and missing nonce**
-- Description: If a contract verifies signatures (via `ecrecover` or ECDSA libraries) but does not include a nonce or chain ID in the signed message, the same signature can be replayed multiple times or across different chains/contracts.
-- What to check: For every signature verification, verify that the signed message includes: (a) a nonce that is incremented after use, (b) the contract address (`address(this)`) to prevent cross-contract replay, (c) the chain ID to prevent cross-chain replay, and (d) a deadline/expiration to limit temporal replay. Flag signatures that lack any of these protections.
-- Severity: high
+Record the `version` field from the pattern database file — it will be written to the `pattern_db_version` field in the output.
 
 ---
 
@@ -256,20 +85,7 @@ For each mapped requirement, examine the code at the mapped locations and match 
 
 ### Step 2a: Determine Applicable Categories
 
-Based on the requirement `type` and the code context at the mapped locations, determine which pattern categories are applicable:
-
-| Requirement Type | Primary Categories | Secondary Categories |
-|---|---|---|
-| `access_control` | ACCESS | UPGRADE, REENT |
-| `validation` | INT, LOGIC | EXTCALL |
-| `state_transition` | REENT, LOGIC | GAS, EXTCALL |
-| `event_emission` | LOGIC | (none) |
-| `error_handling` | EXTCALL, LOGIC | INT |
-| `data_integrity` | INT, ORACLE | REENT, CRYPTO |
-| `lifecycle` | UPGRADE, ACCESS | GAS |
-| `other` | All categories | (none) |
-
-For `other` type requirements, scan all categories.
+Based on the requirement `type` and the code context at the mapped locations, determine which pattern categories are applicable. Use the `category_mapping` object from the loaded `patterns-v1.json` to look up primary and secondary categories for each requirement type. For `other` type requirements (where `primary` is `["ALL"]`), scan all categories.
 
 ### Step 2b: Pattern Matching
 
@@ -483,6 +299,58 @@ Only include pattern category rows that have a non-zero count.
 
 ---
 
+## Batch Control
+
+For large projects with many requirements (20+ mapped requirements), processing all items in a single run may exceed the context window. Use batch control to process items incrementally.
+
+### Batch Parameters
+
+Parse `$ARGUMENTS` for the following optional flags:
+
+- `--batch=N`: Start processing from batch number N (1-indexed). Each batch processes `BATCH_SIZE` mapped requirements.
+- `--batch-size=N`: Number of mapped requirements to process per batch. Default: 10.
+- `--resume`: Continue from where the last batch left off, reading progress from `.speca/checklist_progress.json`.
+
+If no batch flags are provided, process ALL requirements in a single run (default behavior for small projects).
+
+### Batch Processing Logic
+
+1. **Count total items**: Let `TOTAL` = number of entries in the `mappings` array.
+2. **If `TOTAL <= BATCH_SIZE` and no batch flags given**: Process all items normally (no batching needed).
+3. **If `--batch=N` is specified**:
+   - Calculate `start_index = (N - 1) * BATCH_SIZE`.
+   - Calculate `end_index = min(start_index + BATCH_SIZE, TOTAL)`.
+   - Process only requirements at indices `[start_index, end_index)`.
+4. **If `--resume` is specified**:
+   - Read `.speca/checklist_progress.json` (schema below).
+   - Set `start_index = last_processed_index + 1`.
+   - Set `end_index = min(start_index + BATCH_SIZE, TOTAL)`.
+   - If `start_index >= TOTAL`, tell the user: "All requirements have been processed. Run without --resume to regenerate from scratch."
+
+### Progress Tracking
+
+After each batch run, write `.speca/checklist_progress.json`:
+
+```json
+{
+  "last_processed_index": <integer>,
+  "total": <integer>,
+  "batch_size": <integer>,
+  "completed_batches": <integer>,
+  "remaining": <integer>
+}
+```
+
+### Merging Batch Results
+
+When running in batch mode:
+- If `.speca/checklist.json` already exists from a previous batch, read it and **append** new check items to the existing `checklist` array.
+- Update the `total_checks` and `summary` counts to reflect all accumulated items.
+- Do NOT overwrite previous batch results; merge them.
+- After the final batch (when `last_processed_index + 1 >= TOTAL`), recalculate IDs and priorities across the full merged checklist to ensure consistency.
+
+---
+
 ## Error Handling
 
 - If `.speca/config.json` does not exist, stop and tell the user to run `/speca-init`.
@@ -490,7 +358,8 @@ Only include pattern category rows that have a non-zero count.
 - If `.speca/mapping.json` does not exist, stop and tell the user to run `/speca-map`.
 - If the requirements array is empty, stop and tell the user: "No requirements found. Please run `/speca-extract` to populate the requirements."
 - If the mappings array is empty, stop and tell the user: "No mappings found. Please run `/speca-map` to map requirements to source code."
-- If `.speca/checklist.json` already exists, overwrite it without asking (checklist generation is idempotent and re-runnable).
+- If `.speca/checklist.json` already exists and no batch flags are set, overwrite it without asking (checklist generation is idempotent and re-runnable).
+- If `--resume` is specified but `.speca/checklist_progress.json` does not exist, tell the user: "No progress file found. Run with `--batch=1` to start a new batch run."
 
 ---
 

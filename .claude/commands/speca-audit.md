@@ -49,9 +49,61 @@ Maintain the sorted list as the audit queue. You will process items in this orde
 
 ---
 
+## Batch Control
+
+For large checklists (20+ static items), processing all items in a single run may exceed the context window. Use batch control to process items incrementally.
+
+### Batch Parameters
+
+Parse `$ARGUMENTS` for the following optional flags:
+
+- `--batch=N`: Start processing from batch number N (1-indexed) of the sorted audit queue. Each batch processes `BATCH_SIZE` items.
+- `--batch-size=N`: Number of checklist items to audit per batch. Default: 10.
+- `--resume`: Continue from where the last batch left off, reading progress from `.speca/audit_progress.json`.
+
+If no batch flags are provided, process ALL static checklist items in a single run (default behavior for small projects).
+
+### Batch Processing Logic
+
+1. **Count total static items**: Let `TOTAL` = number of checklist items with `check_type: "static"` (after sorting in Phase 1).
+2. **If `TOTAL <= BATCH_SIZE` and no batch flags given**: Process all items normally (no batching needed).
+3. **If `--batch=N` is specified**:
+   - Calculate `start_index = (N - 1) * BATCH_SIZE`.
+   - Calculate `end_index = min(start_index + BATCH_SIZE, TOTAL)`.
+   - Process only the sorted checklist items at indices `[start_index, end_index)`.
+4. **If `--resume` is specified**:
+   - Read `.speca/audit_progress.json`.
+   - Set `start_index = last_processed_index + 1`.
+   - Set `end_index = min(start_index + BATCH_SIZE, TOTAL)`.
+   - If `start_index >= TOTAL`, tell the user: "All checklist items have been audited. Run without --resume to re-audit from scratch."
+
+### Progress Tracking
+
+After each batch run, write `.speca/audit_progress.json`:
+
+```json
+{
+  "last_processed_index": <integer>,
+  "total": <integer>,
+  "batch_size": <integer>,
+  "completed_batches": <integer>,
+  "remaining": <integer>
+}
+```
+
+### Merging Batch Results
+
+When running in batch mode:
+- If `.speca/findings.json` already exists from a previous batch, read it and **append** new findings to the existing `findings` array.
+- Update `total_findings` and `findings_by_severity` counts to reflect all accumulated findings.
+- Do NOT overwrite previous batch results; merge them.
+- After the final batch (when `last_processed_index + 1 >= TOTAL`), re-assign finding IDs sequentially across the full merged findings list (FIND-001, FIND-002, ...) ordered by severity.
+
+---
+
 ## Phase 2: Three-Phase Inspection
 
-For each checklist item with `check_type: "static"`, locate the corresponding code using the `mappings` array (match via `requirement_id`) and perform the three-phase inspection below. For items with `check_type: "dynamic"`, skip the code inspection and mark them as `"skipped_dynamic"` in the results (they will be handled by `/speca-test`).
+For each checklist item with `check_type: "static"` (within the current batch range, if batching is active), locate the corresponding code using the `mappings` array (match via `requirement_id`) and perform the three-phase inspection below. For items with `check_type: "dynamic"`, skip the code inspection and mark them as `"skipped_dynamic"` in the results (they will be handled by `/speca-test`).
 
 ### How to Find Code for a Checklist Item
 
@@ -96,11 +148,11 @@ For each checklist item where code was found in Phase 2a, verify correctness:
 
 3. **Does the logic match the specification?** Compare against the requirement text from `requirements.json` (accessible via the mapping's `requirement_text` field).
 
-4. **Check against matched vulnerability patterns.** If the checklist item has `pattern_refs`, evaluate the code specifically for the referenced vulnerability patterns:
+4. **Check against matched vulnerability patterns.** If the checklist item has `pattern_refs`, read `.claude/speca/patterns-v1.json` (if not already loaded) and look up each referenced pattern by ID. Evaluate the code specifically against the pattern's `what_to_check` instructions. For example:
    - **REENT-001**: Are state variables updated AFTER an external call? Look for `.call`, `.send`, `.transfer` followed by state variable assignments.
    - **ACCESS-001**: Is a public/external state-changing function missing access control (no modifier, no `require(msg.sender == ...)` check)?
    - **LOGIC-001**: Are comparison operators correct relative to the specification?
-   - (Apply all relevant patterns from the checklist item's `pattern_refs`.)
+   - (Apply all relevant patterns from the checklist item's `pattern_refs` using the detailed `what_to_check` field from the pattern database.)
 
 **If a correctness issue is found:** Record it as a potential finding with:
 - The specific code that is incorrect.
@@ -373,7 +425,8 @@ Next steps:
 - If `.speca/mapping.json` does not exist, stop and tell the user to run `/speca-map`.
 - If a Solidity source file referenced in `mapping.json` cannot be read, warn the user and skip checks that depend on that file. Record a finding of severity `high` noting that the source file is missing.
 - If the checklist array is empty, stop and tell the user: "The checklist is empty. Please run `/speca-checklist` to generate check items."
-- If `.speca/findings.json` already exists, overwrite it without asking (auditing is idempotent and re-runnable).
+- If `.speca/findings.json` already exists and no batch flags are set, overwrite it without asking (auditing is idempotent and re-runnable).
+- If `--resume` is specified but `.speca/audit_progress.json` does not exist, tell the user: "No progress file found. Run with `--batch=1` to start a new batch run."
 
 ---
 

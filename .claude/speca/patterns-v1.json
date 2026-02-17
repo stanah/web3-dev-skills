@@ -1,0 +1,273 @@
+{
+  "version": "1.0",
+  "description": "Solidity Vulnerability Pattern Database for SPECA pipeline",
+  "updated_at": "2026-02-17",
+  "categories": [
+    {
+      "id": "REENT",
+      "name": "Reentrancy",
+      "patterns": [
+        {
+          "id": "REENT-001",
+          "title": "State changes after external calls",
+          "description": "State variables are modified after an external call (.call, .send, .transfer, or interaction with an external contract). This violates the checks-effects-interactions pattern and allows a malicious callee to re-enter the function before state is updated.",
+          "what_to_check": "For each function that makes an external call, verify that all state variable writes occur BEFORE the external call. Look for the checks-effects-interactions pattern. If a nonReentrant modifier is present, note it as a mitigation but still flag the ordering issue.",
+          "severity": "critical"
+        },
+        {
+          "id": "REENT-002",
+          "title": "Cross-function reentrancy via shared state",
+          "description": "Two or more functions share a state variable, and one function makes an external call while the other reads the shared state. An attacker can re-enter via the second function during the first function's external call, reading stale state.",
+          "what_to_check": "Identify functions that share state variables. If one function modifies a shared variable and makes an external call, and another function reads that variable, verify that either (a) a reentrancy guard covers both functions, or (b) state is updated before the external call in all paths.",
+          "severity": "critical"
+        },
+        {
+          "id": "REENT-003",
+          "title": "Read-only reentrancy via view functions",
+          "description": "A view or pure function reads state that is temporarily inconsistent during another function's execution. External protocols that call view functions for pricing or balance checks can be exploited during reentrancy.",
+          "what_to_check": "Identify view/pure functions that return state values used by external integrators (e.g., balanceOf, totalSupply, getPrice). Verify that these values cannot be observed in an inconsistent state during the execution of any state-changing function that makes external calls.",
+          "severity": "high"
+        }
+      ]
+    },
+    {
+      "id": "ACCESS",
+      "name": "Access Control",
+      "patterns": [
+        {
+          "id": "ACCESS-001",
+          "title": "Missing access modifiers on state-changing functions",
+          "description": "A public or external function that modifies state variables lacks an access control modifier (e.g., onlyOwner, onlyRole), require/revert check on msg.sender, or equivalent authorization logic.",
+          "what_to_check": "For each public/external function that writes to state variables, verify that at least one access control mechanism exists: a named modifier, a require(msg.sender == ...) check, or a role-based check (e.g., hasRole). Functions intentionally open to all callers should be explicitly documented as such.",
+          "severity": "critical"
+        },
+        {
+          "id": "ACCESS-002",
+          "title": "tx.origin authentication",
+          "description": "The contract uses tx.origin instead of msg.sender for authentication. tx.origin returns the original external account that initiated the transaction, making the contract vulnerable to phishing attacks where a malicious contract tricks the owner into calling it.",
+          "what_to_check": "Search for any use of tx.origin in authentication logic (e.g., require(tx.origin == owner)). Flag every such usage. The only acceptable use of tx.origin is for non-security purposes such as detecting whether the caller is an EOA (tx.origin == msg.sender), and even that should be flagged as informational.",
+          "severity": "critical"
+        },
+        {
+          "id": "ACCESS-003",
+          "title": "Unprotected initializer functions",
+          "description": "In upgradeable contracts using the proxy pattern, the initialize() function (or equivalent) is not protected against being called multiple times or by unauthorized callers. An attacker who calls initialize() on an uninitialized proxy can take ownership of the contract.",
+          "what_to_check": "For contracts that use initializer patterns (e.g., initialize(), __init(), OpenZeppelin Initializable), verify that: (a) the function has an initializer modifier or equivalent guard preventing re-initialization, and (b) there is access control on who can call it, or it is called atomically during deployment.",
+          "severity": "critical"
+        }
+      ]
+    },
+    {
+      "id": "INT",
+      "name": "Integer",
+      "patterns": [
+        {
+          "id": "INT-001",
+          "title": "Unchecked arithmetic (pre-0.8)",
+          "description": "Arithmetic operations that can overflow or underflow without detection. In Solidity < 0.8.0, arithmetic wraps silently. In Solidity >= 0.8.0, this is only a concern inside unchecked {} blocks.",
+          "what_to_check": "Determine the Solidity compiler version from the pragma statement. If < 0.8.0, flag all arithmetic operations that lack SafeMath or equivalent library usage. If >= 0.8.0, check for any unchecked {} blocks and verify that overflow/underflow is impossible in context (e.g., loop counters that are bounded).",
+          "severity": "high"
+        },
+        {
+          "id": "INT-002",
+          "title": "Unsafe type casting and truncation",
+          "description": "Casting between integer types of different sizes (e.g., uint256 to uint128, int256 to uint256) can silently truncate values or produce unexpected results from sign conversion.",
+          "what_to_check": "Identify all explicit type casts between integer types. Verify that either (a) the value is guaranteed to fit in the target type by prior validation, or (b) the cast is in a context where truncation is intentional and documented. Pay special attention to casts from signed to unsigned types and from larger to smaller types.",
+          "severity": "high"
+        },
+        {
+          "id": "INT-003",
+          "title": "Division by zero and rounding errors",
+          "description": "Division operations where the divisor can be zero (causing a revert) or where integer division truncation leads to loss of precision that accumulates over time, especially in financial calculations.",
+          "what_to_check": "For every division operation, verify that the divisor is checked to be non-zero before the division. For financial calculations (token amounts, interest rates, fee calculations), verify that rounding direction is correct (round in the protocol's favor, not the user's) and that precision loss is bounded and acceptable.",
+          "severity": "high"
+        }
+      ]
+    },
+    {
+      "id": "LOGIC",
+      "name": "Logic",
+      "patterns": [
+        {
+          "id": "LOGIC-001",
+          "title": "Incorrect comparison operators",
+          "description": "Using < instead of <= (or vice versa) in boundary checks, leading to off-by-one errors that allow or prevent actions at boundary values.",
+          "what_to_check": "For each comparison in require statements, if statements, and loop conditions, verify that the operator matches the specification. Pay special attention to boundary conditions: does the requirement say \"greater than\" (>) or \"at least\" (>=)? Does \"less than N\" mean < N or <= N? Check all comparisons against the corresponding requirement text.",
+          "severity": "medium"
+        },
+        {
+          "id": "LOGIC-002",
+          "title": "Missing or wrong conditional branches",
+          "description": "A conditional (if/else) chain does not cover all possible states, or a branch handles the wrong condition. This can lead to unexpected fallthrough behavior where code executes in cases it should not.",
+          "what_to_check": "For each conditional chain (if/else if/else), enumerate the possible states of the condition variables and verify that every state is handled correctly. Look for missing else clauses that should revert or handle a default case. Verify that the conditions are mutually exclusive where expected.",
+          "severity": "medium"
+        },
+        {
+          "id": "LOGIC-003",
+          "title": "Default case handling in if/else chains",
+          "description": "When a function handles multiple enumerated cases (e.g., token types, action types, states), the default/fallthrough case may silently succeed instead of reverting, allowing unexpected inputs to be processed.",
+          "what_to_check": "For each if/else chain or switch-like pattern that handles enumerated cases, verify that the final else clause (or the case when no condition matches) either reverts with a meaningful error or is explicitly documented as intentional pass-through. Flag any default path that silently succeeds without an explicit comment explaining why.",
+          "severity": "medium"
+        }
+      ]
+    },
+    {
+      "id": "EXTCALL",
+      "name": "External Call",
+      "patterns": [
+        {
+          "id": "EXTCALL-001",
+          "title": "Unchecked return values from low-level calls",
+          "description": "Low-level calls (.call(), .delegatecall(), .staticcall()) return a boolean indicating success or failure. If the return value is not checked, a failed call is silently ignored, and execution continues with potentially corrupted state.",
+          "what_to_check": "For every .call(), .delegatecall(), and .staticcall() invocation, verify that the boolean return value is checked. The typical pattern is (bool success, ) = target.call(data); require(success, \"...\"). Flag any call where the return value is discarded or ignored.",
+          "severity": "critical"
+        },
+        {
+          "id": "EXTCALL-002",
+          "title": "Delegatecall to untrusted targets",
+          "description": "delegatecall executes code in the context of the calling contract, meaning the target code can modify the caller's storage. If the target address is user-controlled or not immutable, an attacker can execute arbitrary code with the caller's storage.",
+          "what_to_check": "For every delegatecall invocation, verify that the target address is either (a) hardcoded/immutable, (b) set only by a trusted admin via proper access control, or (c) validated against an allowlist. Flag any delegatecall where the target address comes from user input, calldata, or an unprotected storage variable.",
+          "severity": "critical"
+        },
+        {
+          "id": "EXTCALL-003",
+          "title": "Gas stipend assumptions (transfer vs call)",
+          "description": "address.transfer() and address.send() forward only 2300 gas, which is insufficient for recipients that are contracts with non-trivial receive() or fallback() functions. This can cause transfers to fail unexpectedly, especially after EIP-1884 gas repricing.",
+          "what_to_check": "Identify all uses of .transfer() and .send() for sending ETH. Flag them as potentially problematic and recommend using .call{value: amount}(\"\") instead, with proper reentrancy protection. If .transfer() or .send() is used intentionally (e.g., as a reentrancy mitigation), note the trade-off.",
+          "severity": "medium"
+        }
+      ]
+    },
+    {
+      "id": "GAS",
+      "name": "Gas/DoS",
+      "patterns": [
+        {
+          "id": "GAS-001",
+          "title": "Unbounded loops over dynamic arrays",
+          "description": "A loop iterates over an array whose length can grow without bound (e.g., a list of all token holders, all pending withdrawals). As the array grows, the function may exceed the block gas limit and become permanently uncallable.",
+          "what_to_check": "For every loop (for, while) that iterates over a storage array or a dynamic-length input array, verify that either (a) the array length has an enforced upper bound, or (b) the function supports pagination/batching, or (c) the array is guaranteed to stay small by design. Flag any loop over an unbounded array.",
+          "severity": "high"
+        },
+        {
+          "id": "GAS-002",
+          "title": "Block gas limit interactions",
+          "description": "A function's gas consumption is dependent on external state that can be manipulated by an attacker, causing the function to consume more gas than the block gas limit allows.",
+          "what_to_check": "Identify functions whose gas consumption depends on state that external users can influence (e.g., number of entries in a mapping, length of a user-controlled array). Verify that gas consumption has a bounded maximum that fits within the block gas limit. Consider functions called in batch or aggregate operations.",
+          "severity": "high"
+        },
+        {
+          "id": "GAS-003",
+          "title": "External call failures in loops (pull vs push)",
+          "description": "A loop that makes external calls (e.g., distributing rewards to multiple recipients) can be blocked if any single call fails (reverts), preventing all subsequent iterations. This is the \"push\" payment pattern vulnerability.",
+          "what_to_check": "For every loop that makes external calls, verify that a single call failure does not revert the entire loop. The preferred pattern is \"pull\" (let recipients withdraw) rather than \"push\" (send to all recipients). If push is used, verify that individual failures are caught and handled (e.g., using try/catch or ignoring the return value with logging).",
+          "severity": "high"
+        }
+      ]
+    },
+    {
+      "id": "ORACLE",
+      "name": "Oracle/Price",
+      "patterns": [
+        {
+          "id": "ORACLE-001",
+          "title": "Manipulable price feeds (single-block)",
+          "description": "The contract reads a price from an on-chain source (e.g., a DEX spot price, a single-block TWAP) that can be manipulated within a single transaction via flash loans or large trades.",
+          "what_to_check": "Identify all price feed sources used by the contract. For each, determine whether the price can be manipulated within a single block. Flag DEX spot prices (getReserves(), slot0(), single balanceOf ratios) as manipulable. Verify that time-weighted averages (TWAPs) use a sufficient window (typically >= 30 minutes). Check if the oracle has manipulation-resistance mechanisms (e.g., Chainlink aggregation).",
+          "severity": "critical"
+        },
+        {
+          "id": "ORACLE-002",
+          "title": "Missing staleness checks on oracle data",
+          "description": "Oracle data (e.g., from Chainlink) can become stale if the oracle stops updating. Using stale prices for financial calculations (liquidations, swaps, collateral valuation) can lead to incorrect valuations and exploitable conditions.",
+          "what_to_check": "For every oracle read (e.g., Chainlink latestRoundData()), verify that: (a) the updatedAt timestamp is checked against a maximum staleness threshold, (b) the answeredInRound is checked against roundId to detect stale rounds, and (c) the returned price is checked to be > 0. Flag any oracle read that does not perform all three checks.",
+          "severity": "high"
+        }
+      ]
+    },
+    {
+      "id": "ERC",
+      "name": "ERC Standard",
+      "patterns": [
+        {
+          "id": "ERC-001",
+          "title": "ERC-20 approve race condition",
+          "description": "The ERC-20 approve() function is vulnerable to a front-running race condition: if an allowance is changed from N to M, the spender can front-run and spend both N and M. The mitigation is to use increaseAllowance()/decreaseAllowance() or to require setting allowance to 0 before setting a new value.",
+          "what_to_check": "If the contract implements ERC-20 approve(), verify that either (a) increaseAllowance()/decreaseAllowance() alternatives are provided, or (b) the contract documents the known race condition, or (c) the approve function requires the current allowance to be 0 before setting a new non-zero value.",
+          "severity": "medium"
+        },
+        {
+          "id": "ERC-002",
+          "title": "Missing return value checks (non-standard ERC-20)",
+          "description": "Some ERC-20 tokens (notably USDT) do not return a boolean from transfer() and transferFrom(), violating the standard. Calling these functions and checking the return value with require(token.transfer(...)) will revert because the return data is empty.",
+          "what_to_check": "For every ERC-20 transfer(), transferFrom(), and approve() call, verify that the contract uses SafeERC20 (from OpenZeppelin) or equivalent wrappers that handle non-standard return values. Flag any direct .transfer() or .transferFrom() call on an arbitrary ERC-20 token without safe wrappers.",
+          "severity": "high"
+        },
+        {
+          "id": "ERC-003",
+          "title": "ERC-721/1155 callback requirements",
+          "description": "ERC-721 safeTransferFrom and ERC-1155 safeTransferFrom/safeBatchTransferFrom require the recipient contract to implement callback interfaces (onERC721Received, onERC1155Received). Failing to call the safe variants when transferring to contracts can lock tokens permanently.",
+          "what_to_check": "For every NFT transfer, verify that the safe variant is used when the recipient could be a contract. If the non-safe variant (transferFrom for ERC-721) is used, verify that the recipient is known to be an EOA or that the use is intentional and documented. For ERC-1155, verify callback return values are checked.",
+          "severity": "medium"
+        }
+      ]
+    },
+    {
+      "id": "UPGRADE",
+      "name": "Upgradability",
+      "patterns": [
+        {
+          "id": "UPGRADE-001",
+          "title": "Storage layout collision in proxies",
+          "description": "In the proxy pattern, the implementation contract and the proxy share storage. If the implementation contract's storage layout changes between upgrades (e.g., reordering variables, inserting new variables before existing ones), storage slots collide, corrupting data.",
+          "what_to_check": "If the contract uses a proxy pattern, verify that: (a) new storage variables are only added at the end of the existing layout, (b) existing variables are never removed or reordered, (c) inheritance order is preserved across upgrades, and (d) storage gaps (uint256[50] __gap) are used in base contracts to reserve space.",
+          "severity": "critical"
+        },
+        {
+          "id": "UPGRADE-002",
+          "title": "Uninitialized proxy implementation",
+          "description": "The implementation contract behind a proxy is deployed but never initialized, leaving default values for ownership and critical state. An attacker can call initialize() on the implementation contract directly (not via the proxy), taking ownership and potentially executing selfdestruct to destroy the implementation.",
+          "what_to_check": "Verify that the implementation contract's constructor disables initializers (e.g., _disableInitializers() in OpenZeppelin) to prevent direct initialization. Also verify that the proxy is initialized atomically during deployment.",
+          "severity": "critical"
+        },
+        {
+          "id": "UPGRADE-003",
+          "title": "Selfdestruct in implementation contract",
+          "description": "If the implementation contract contains a selfdestruct instruction (directly or via delegatecall to a contract that does), an attacker who gains control of the implementation can destroy it, bricking all proxies that depend on it.",
+          "what_to_check": "Verify that no function in the implementation contract can execute selfdestruct. Search for selfdestruct and delegatecall patterns that could lead to self-destruction. Verify that delegatecall targets are restricted and cannot execute selfdestruct.",
+          "severity": "critical"
+        }
+      ]
+    },
+    {
+      "id": "CRYPTO",
+      "name": "Cryptographic",
+      "patterns": [
+        {
+          "id": "CRYPTO-001",
+          "title": "Weak randomness from block variables",
+          "description": "Using block.timestamp, block.difficulty (now block.prevrandao), blockhash, or other block variables as sources of randomness is insecure. Miners/validators can influence these values, and blockhash is only available for the most recent 256 blocks.",
+          "what_to_check": "Search for uses of block.timestamp, block.difficulty, block.prevrandao, blockhash, or block.number in contexts where randomness is needed (e.g., lottery selection, random assignment, token ID generation). Flag all such uses as insecure. Recommend commit-reveal schemes or VRF (e.g., Chainlink VRF) for security-critical randomness.",
+          "severity": "high"
+        },
+        {
+          "id": "CRYPTO-002",
+          "title": "Signature replay and missing nonce",
+          "description": "If a contract verifies signatures (via ecrecover or ECDSA libraries) but does not include a nonce or chain ID in the signed message, the same signature can be replayed multiple times or across different chains/contracts.",
+          "what_to_check": "For every signature verification, verify that the signed message includes: (a) a nonce that is incremented after use, (b) the contract address (address(this)) to prevent cross-contract replay, (c) the chain ID to prevent cross-chain replay, and (d) a deadline/expiration to limit temporal replay. Flag signatures that lack any of these protections.",
+          "severity": "high"
+        }
+      ]
+    }
+  ],
+  "category_mapping": {
+    "access_control": { "primary": ["ACCESS"], "secondary": ["UPGRADE", "REENT"] },
+    "validation": { "primary": ["INT", "LOGIC"], "secondary": ["EXTCALL"] },
+    "state_transition": { "primary": ["REENT", "LOGIC"], "secondary": ["GAS", "EXTCALL"] },
+    "event_emission": { "primary": ["LOGIC"], "secondary": [] },
+    "error_handling": { "primary": ["EXTCALL", "LOGIC"], "secondary": ["INT"] },
+    "data_integrity": { "primary": ["INT", "ORACLE"], "secondary": ["REENT", "CRYPTO"] },
+    "lifecycle": { "primary": ["UPGRADE", "ACCESS"], "secondary": ["GAS"] },
+    "other": { "primary": ["ALL"], "secondary": [] }
+  }
+}
