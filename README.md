@@ -1,9 +1,10 @@
 # SPECA Commands for Claude Code
 
-Solidity smart contract security auditing framework for Claude Code, based on the
-SPECA (SPEcification-to-Checklist Auditing) methodology.
+A set of [Claude Code](https://docs.anthropic.com/en/docs/claude-code) custom slash commands for Solidity smart contract security auditing, based on the SPECA (SPEcification-to-Checklist Auditing) methodology.
 
-**Reference:** [SPECA: Scalable LLM-Driven Specification-to-Checklist Auditing of Smart Contracts](https://arxiv.org/abs/2602.07513v2)
+> **Note:** This is an **unofficial, independent implementation** inspired by the SPECA methodology. It is not affiliated with or endorsed by the original authors.
+>
+> **Reference:** Kamba, M. & Sannai, A. (2025). *SPECA: Specification-to-Checklist Agentic Auditing for Multi-Implementation Systems*. [arXiv:2602.07513v2](https://arxiv.org/abs/2602.07513v2)
 
 ## Quick Start
 
