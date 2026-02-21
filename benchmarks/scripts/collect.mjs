@@ -10,7 +10,7 @@ export function parseContestUrl(url) {
   if (!match) {
     throw new Error(`Invalid GitHub URL: ${url}`);
   }
-  return { org: match[1], repo: match[2] };
+  return { org: match[1], repo: match[2].replace(/\.git$/, '') };
 }
 
 /**
@@ -18,6 +18,9 @@ export function parseContestUrl(url) {
  * Format: case-{num}-{category}-{name}
  */
 export function buildCaseDir(num, category, name) {
+  if (!/^[a-zA-Z0-9-]+$/.test(category) || !/^[a-zA-Z0-9-]+$/.test(name)) {
+    throw new Error(`category and name must be alphanumeric with hyphens only: got category="${category}", name="${name}"`);
+  }
   const padded = String(num).padStart(3, '0');
   return `case-${padded}-${category.toLowerCase()}-${name.toLowerCase()}`;
 }
@@ -106,5 +109,10 @@ if (process.argv[1] === import.meta.filename) {
     process.exit(1);
   }
 
-  scaffoldCase(process.cwd(), contestUrl, Number(caseNum), category, shortName);
+  const num = Number(caseNum);
+  if (!Number.isInteger(num) || num < 0) {
+    console.error('Error: <case-number> must be a non-negative integer');
+    process.exit(1);
+  }
+  scaffoldCase(process.cwd(), contestUrl, num, category, shortName);
 }
