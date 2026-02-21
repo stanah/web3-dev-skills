@@ -86,6 +86,26 @@ describe('matchFindings', () => {
     assert.equal(result.tp.length, 0);
     assert.equal(result.fp.length, 1);
   });
+
+  it('treats findings with no proof_trace as false positives', () => {
+    const findings = [{ id: 'FIND-X', checklist_id: 'CHK-REENT-001-a', severity: 'high' }];
+    const result = matchFindings(findings, groundTruth, 5);
+    assert.equal(result.fp.length, 1);
+    assert.equal(result.tp.length, 0);
+  });
+
+  it('matches files with leading ./ prefix differences', () => {
+    const findings = [{
+      id: 'FIND-001',
+      checklist_id: 'CHK-REENT-001-a',
+      severity: 'critical',
+      proof_trace: {
+        code_refs: [{ file: './contracts/Vault.sol', lines: [31, 38] }]
+      }
+    }];
+    const result = matchFindings(findings, groundTruth, 5);
+    assert.equal(result.tp.length, 1);
+  });
 });
 
 describe('computeMetrics', () => {

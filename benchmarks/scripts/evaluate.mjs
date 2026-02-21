@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync, readdirSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, readdirSync, existsSync } from 'node:fs';
 import { join, basename } from 'node:path';
 
 /**
@@ -34,6 +34,10 @@ export function matchFindings(findings, groundTruth, lineTolerance = 5) {
   const fp = [];
 
   for (const finding of findings) {
+    if (!finding.checklist_id) {
+      fp.push({ finding });
+      continue;
+    }
     const category = extractCategory(finding.checklist_id);
     const refs = finding.proof_trace?.code_refs || [];
     let isTP = false;
@@ -199,8 +203,9 @@ export function evaluateAll(benchmarkRoot) {
     }
   }
 
+  const dateStr = new Date().toISOString().slice(0, 10);
   const result = {
-    evaluation_date: new Date().toISOString().slice(0, 10),
+    evaluation_date: dateStr,
     speca_version: '1.0',
     cases_evaluated: perCase.length,
     aggregate: {
@@ -213,15 +218,14 @@ export function evaluateAll(benchmarkRoot) {
     },
     per_case: perCase
   };
-
-  const dateStr = new Date().toISOString().slice(0, 10);
+  mkdirSync(join(benchmarkRoot, 'results'), { recursive: true });
   const outPath = join(benchmarkRoot, 'results', `${dateStr}-evaluation.json`);
   writeFileSync(outPath, JSON.stringify(result, null, 2));
   return result;
 }
 
 // CLI entrypoint
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] === import.meta.filename) {
   const root = process.argv[2] || process.cwd();
   const result = evaluateAll(join(root, 'benchmarks'));
   console.log(`Evaluated ${result.cases_evaluated} cases`);
