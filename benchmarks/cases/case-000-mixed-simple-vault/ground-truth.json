@@ -1,0 +1,42 @@
+{
+  "case_id": "case-000-mixed-simple-vault",
+  "known_vulnerabilities": [
+    {
+      "id": "VUL-001",
+      "title": "Missing whitelist/owner check in deposit()",
+      "severity": "critical",
+      "category": "ACCESS",
+      "swc_id": "SWC-105",
+      "affected_files": ["contracts/Vault.sol"],
+      "affected_functions": ["deposit()"],
+      "affected_lines": [23, 28],
+      "description": "deposit() lacks whitelist or owner check, allowing any address to deposit",
+      "source": "intentional-bug-1"
+    },
+    {
+      "id": "VUL-002",
+      "title": "Missing onlyOwner on emergencyUnpause()",
+      "severity": "critical",
+      "category": "ACCESS",
+      "swc_id": "SWC-105",
+      "affected_files": ["contracts/Vault.sol"],
+      "affected_functions": ["emergencyUnpause()"],
+      "affected_lines": [45, 47],
+      "description": "emergencyUnpause() has no access control, allowing anyone to unpause",
+      "source": "intentional-bug-2"
+    },
+    {
+      "id": "VUL-003",
+      "title": "Reentrancy in withdraw()",
+      "severity": "high",
+      "category": "REENT",
+      "swc_id": "SWC-107",
+      "affected_files": ["contracts/Vault.sol"],
+      "affected_functions": ["withdraw(uint256)"],
+      "affected_lines": [31, 38],
+      "description": "withdraw() violates CEI pattern with external call before state update",
+      "source": "intentional-bug-3"
+    }
+  ],
+  "false_positive_notes": []
+}

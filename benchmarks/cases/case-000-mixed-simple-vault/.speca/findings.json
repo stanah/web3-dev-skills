@@ -1,0 +1,80 @@
+{
+  "audited_at": "2026-02-18T00:00:00Z",
+  "checklist_version": "2026-02-18T00:00:00Z",
+  "total_checks_audited": 10,
+  "total_findings": 3,
+  "findings_by_severity": {
+    "critical": 2,
+    "high": 1,
+    "medium": 0,
+    "low": 0,
+    "informational": 0
+  },
+  "findings": [
+    {
+      "id": "FIND-001",
+      "checklist_id": "CHK-ACCESS-001-a",
+      "severity": "critical",
+      "title": "Missing whitelist/owner access control in deposit()",
+      "description": "The deposit() function at line 23 is callable by any external address. The specification R-AUTH-003 requires that only whitelisted addresses or the owner may call deposit(). The function has no require() check, modifier, or any other mechanism to enforce this access restriction. This violates the authorization model of the contract: any UNTRUSTED external_caller can deposit ETH into the vault, bypassing the whitelist entirely. Combined with FIND-002 (anyone can unpause), an attacker can interact with the vault in ways the specification explicitly forbids.",
+      "proof_trace": {
+        "code_refs": [
+          {
+            "file": "./examples/simple-vault/contracts/Vault.sol",
+            "lines": [23, 28],
+            "snippet": "    function deposit() external payable {\n        require(!paused, \"Paused\");\n        require(msg.value > 0, \"Zero deposit\");\n        balances[msg.sender] += msg.value;\n        emit Deposited(msg.sender, msg.value);\n    }"
+          }
+        ],
+        "reasoning": "Specification says: R-AUTH-003 requires 'Only whitelisted addresses or the owner MUST be able to call deposit().' The interface.yaml also specifies access: whitelist_or_owner. Code does: deposit() at lines 23-28 only checks require(!paused) and require(msg.value > 0). There is no check against the whitelist mapping or owner address. Gap: Any address can call deposit() regardless of whitelist status. The whitelist state variable exists (line 7) and is managed by addToWhitelist/removeFromWhitelist, but deposit() never reads it. Impact: The entire whitelist authorization model is bypassed. Unauthorized actors can deposit ETH and have their balances credited, violating the contract's access control design."
+      },
+      "recommendation": "Add a whitelist/owner check at the beginning of deposit(). Either create a modifier or add an inline require:\n\nrequire(whitelist[msg.sender] || msg.sender == owner, \"Not authorized\");\n\nThis should be placed after the pause check and before the value check.",
+      "false_positive_risk": "low",
+      "threat_model_note": "Within threat model: external_caller (UNTRUSTED) can directly call the public deposit() function without any authorization check. The threat boundary 'external_caller -> no authorized access (should be rejected)' is violated."
+    },
+    {
+      "id": "FIND-002",
+      "checklist_id": "CHK-ACCESS-001-b",
+      "severity": "critical",
+      "title": "Missing onlyOwner modifier on emergencyUnpause()",
+      "description": "The emergencyUnpause() function at line 45 lacks the onlyOwner modifier, allowing any external address to unpause the contract. The specification R-EMR-002 requires that only the owner may call both emergencyPause() and emergencyUnpause(). While emergencyPause() correctly has the onlyOwner modifier (line 40), emergencyUnpause() does not. This completely undermines the emergency pause mechanism: if the owner pauses the contract to prevent exploitation of another vulnerability, any attacker can immediately unpause it, re-enabling deposits and withdrawals.",
+      "proof_trace": {
+        "code_refs": [
+          {
+            "file": "./examples/simple-vault/contracts/Vault.sol",
+            "lines": [45, 47],
+            "snippet": "    function emergencyUnpause() external {\n        paused = false;\n    }"
+          },
+          {
+            "file": "./examples/simple-vault/contracts/Vault.sol",
+            "lines": [40, 42],
+            "snippet": "    function emergencyPause() external onlyOwner {\n        paused = true;\n    }"
+          }
+        ],
+        "reasoning": "Specification says: R-EMR-002 requires 'Only the owner MUST be able to call emergencyPause() and emergencyUnpause().' Code does: emergencyPause() at line 40 has the onlyOwner modifier (correct), but emergencyUnpause() at line 45 has no modifier — its signature is 'function emergencyUnpause() external' without onlyOwner. Gap: Any address can call emergencyUnpause() to set paused = false, negating the owner's emergency pause action. Impact: The emergency mechanism is rendered useless. An attacker who detects a pause can immediately unpause the contract. This is especially dangerous in combination with FIND-001: an attacker can unpause, then exploit the missing whitelist check to deposit and interact with the vulnerable contract."
+      },
+      "recommendation": "Add the onlyOwner modifier to emergencyUnpause():\n\nfunction emergencyUnpause() external onlyOwner {\n    paused = false;\n}",
+      "false_positive_risk": "low",
+      "threat_model_note": "Within threat model: external_caller (UNTRUSTED) can directly call the public emergencyUnpause() function. The threat boundary 'external_caller -> no authorized access (should be rejected)' is violated. This is a clear access control failure."
+    },
+    {
+      "id": "FIND-003",
+      "checklist_id": "CHK-REENT-001-a",
+      "severity": "high",
+      "title": "Reentrancy vulnerability in withdraw() — CEI pattern violated with no state updates before external call",
+      "description": "The withdraw() function at line 31 makes an external call via .call{value: amount} at line 35 without performing any state variable updates beforehand. There is no nonReentrant guard. The checks-effects-interactions (CEI) pattern is violated: the function checks (require statements at lines 32-33), emits an event (line 34), then immediately performs the external interaction (line 35) without any effects (state updates). Additionally, the balances mapping is never decremented during withdrawal, meaning there is no state to update — the accounting only tracks deposits, not withdrawals. If the owner address is a smart contract, its receive() or fallback() function can re-enter withdraw() before the first call completes. Since the balance check uses address(this).balance (which decreases with each ETH transfer), recursive calls would eventually exhaust the contract balance. This also relates to checklist items CHK-REENT-001-b (R-WDR-004: SHOULD follow CEI pattern) and CHK-REENT-002-a (cross-function reentrancy).",
+      "proof_trace": {
+        "code_refs": [
+          {
+            "file": "./examples/simple-vault/contracts/Vault.sol",
+            "lines": [31, 38],
+            "snippet": "    function withdraw(uint256 amount) external onlyOwner {\n        require(!paused, \"Paused\");\n        require(amount <= address(this).balance, \"Insufficient balance\");\n        emit Withdrawn(msg.sender, amount);\n        (bool success, ) = msg.sender.call{value: amount}(\"\");\n        require(success, \"Transfer failed\");\n        // state update after external call - reentrancy risk\n    }"
+          }
+        ],
+        "reasoning": "Specification says: R-WDR-004 states 'Withdrawal SHOULD follow the checks-effects-interactions pattern.' R-WDR-001 states withdraw must transfer the specified amount to the owner. Code does: withdraw() at lines 31-38 performs checks (lines 32-33), then emits an event (line 34), then makes an external call (line 35). No state variable is updated at any point — neither before nor after the external call. The balances mapping is not decremented. Gap: The function violates CEI by performing an external call with no preceding state updates and no reentrancy guard. The comment at line 37 acknowledges this risk. Impact: If the owner is a smart contract (e.g., a multisig, DAO, or smart contract wallet), reentrancy through the receive() function is possible. Each reentrant call passes the balance check because address(this).balance decreases with each transfer. However, since withdraw() is restricted to onlyOwner (a TRUSTED actor), exploitation requires the owner's address to have reentrant callback logic. Severity is high (not critical) because the TRUSTED owner can already withdraw the full balance in a single call."
+      },
+      "recommendation": "1. Add a reentrancy guard (e.g., OpenZeppelin ReentrancyGuard with nonReentrant modifier) to withdraw().\n2. If individual balance tracking is intended, decrement the appropriate balance BEFORE the external call:\n\n    function withdraw(uint256 amount) external onlyOwner nonReentrant {\n        require(!paused, \"Paused\");\n        require(amount <= address(this).balance, \"Insufficient balance\");\n        // effects before interactions\n        emit Withdrawn(msg.sender, amount);\n        (bool success, ) = msg.sender.call{value: amount}(\"\");\n        require(success, \"Transfer failed\");\n    }\n\n3. At minimum, use the nonReentrant modifier as defense-in-depth even if the owner is trusted.",
+      "false_positive_risk": "medium",
+      "threat_model_note": "Partially within threat model: The assumption 'External calls via .call{} may trigger reentrant execution' explicitly acknowledges this attack surface. However, exploitation requires the TRUSTED contract_owner to be a smart contract with reentrant callback logic. Since contract_owner is TRUSTED, the practical exploitability is reduced. Downgraded from critical to high due to owner trust level."
+    }
+  ]
+}

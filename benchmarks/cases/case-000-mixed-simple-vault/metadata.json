@@ -1,0 +1,10 @@
+{
+  "case_id": "case-000-mixed-simple-vault",
+  "source": {
+    "type": "synthetic",
+    "description": "Intentionally vulnerable vault contract from SPECA examples"
+  },
+  "category": "mixed",
+  "created_at": "2026-02-21",
+  "notes": "3 intentional bugs: missing whitelist check, missing onlyOwner, reentrancy"
+}
