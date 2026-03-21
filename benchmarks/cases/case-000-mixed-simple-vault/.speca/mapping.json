@@ -1,7 +1,7 @@
 {
   "mapped_at": "2026-02-17T00:00:00Z",
   "source_files": [
-    "./examples/simple-vault/contracts/Vault.sol"
+    "./contracts/Vault.sol"
   ],
   "total_requirements": 15,
   "mapped": 15,
@@ -12,7 +12,7 @@
       "requirement_text": "R-AUTH-001: Only the contract owner MUST be able to call withdraw().",
       "locations": [
         {
-          "file": "./examples/simple-vault/contracts/Vault.sol",
+          "file": "./contracts/Vault.sol",
           "contract": "Vault",
           "function": "withdraw(uint256)",
           "line_range": [31, 38],
@@ -21,7 +21,7 @@
           "evidence": "withdraw() has onlyOwner modifier which restricts access to the contract owner via require(msg.sender == owner)."
         },
         {
-          "file": "./examples/simple-vault/contracts/Vault.sol",
+          "file": "./contracts/Vault.sol",
           "contract": "Vault",
           "function": "modifier onlyOwner",
           "line_range": [17, 20],
@@ -37,7 +37,7 @@
       "requirement_text": "R-AUTH-002: The contract owner MUST be able to add and remove addresses from the whitelist.",
       "locations": [
         {
-          "file": "./examples/simple-vault/contracts/Vault.sol",
+          "file": "./contracts/Vault.sol",
           "contract": "Vault",
           "function": "addToWhitelist(address)",
           "line_range": [49, 51],
@@ -46,7 +46,7 @@
           "evidence": "addToWhitelist() is restricted to owner via onlyOwner modifier and sets whitelist[addr] = true."
         },
         {
-          "file": "./examples/simple-vault/contracts/Vault.sol",
+          "file": "./contracts/Vault.sol",
           "contract": "Vault",
           "function": "removeFromWhitelist(address)",
           "line_range": [53, 55],
@@ -62,7 +62,7 @@
       "requirement_text": "R-AUTH-003: Only whitelisted addresses or the owner MUST be able to call deposit().",
       "locations": [
         {
-          "file": "./examples/simple-vault/contracts/Vault.sol",
+          "file": "./contracts/Vault.sol",
           "contract": "Vault",
           "function": "deposit()",
           "line_range": [23, 28],
@@ -78,7 +78,7 @@
       "requirement_text": "R-DEP-001: deposit() MUST accept ETH and credit the sender's balance.",
       "locations": [
         {
-          "file": "./examples/simple-vault/contracts/Vault.sol",
+          "file": "./contracts/Vault.sol",
           "contract": "Vault",
           "function": "deposit()",
           "line_range": [23, 28],
@@ -87,7 +87,7 @@
           "evidence": "deposit() is payable and credits the sender's balance via balances[msg.sender] += msg.value."
         },
         {
-          "file": "./examples/simple-vault/contracts/Vault.sol",
+          "file": "./contracts/Vault.sol",
           "contract": "Vault",
           "function": "var balances",
           "line_range": [8, 8],
@@ -103,7 +103,7 @@
       "requirement_text": "R-DEP-002: deposit() MUST revert if msg.value is 0.",
       "locations": [
         {
-          "file": "./examples/simple-vault/contracts/Vault.sol",
+          "file": "./contracts/Vault.sol",
           "contract": "Vault",
           "function": "deposit()",
           "line_range": [23, 28],
@@ -119,7 +119,7 @@
       "requirement_text": "R-DEP-003: A Deposited(address, uint256) event MUST be emitted on successful deposit.",
       "locations": [
         {
-          "file": "./examples/simple-vault/contracts/Vault.sol",
+          "file": "./contracts/Vault.sol",
           "contract": "Vault",
           "function": "deposit()",
           "line_range": [23, 28],
@@ -128,7 +128,7 @@
           "evidence": "deposit() emits Deposited(msg.sender, msg.value) on successful execution."
         },
         {
-          "file": "./examples/simple-vault/contracts/Vault.sol",
+          "file": "./contracts/Vault.sol",
           "contract": "Vault",
           "function": "event Deposited(address,uint256)",
           "line_range": [10, 10],
@@ -144,7 +144,7 @@
       "requirement_text": "R-WDR-001: withdraw(uint256 amount) MUST transfer the specified amount to the owner.",
       "locations": [
         {
-          "file": "./examples/simple-vault/contracts/Vault.sol",
+          "file": "./contracts/Vault.sol",
           "contract": "Vault",
           "function": "withdraw(uint256)",
           "line_range": [31, 38],
@@ -160,7 +160,7 @@
       "requirement_text": "R-WDR-002: withdraw() MUST revert if amount exceeds the contract balance.",
       "locations": [
         {
-          "file": "./examples/simple-vault/contracts/Vault.sol",
+          "file": "./contracts/Vault.sol",
           "contract": "Vault",
           "function": "withdraw(uint256)",
           "line_range": [31, 38],
@@ -176,7 +176,7 @@
       "requirement_text": "R-WDR-003: A Withdrawn(address, uint256) event MUST be emitted on successful withdrawal.",
       "locations": [
         {
-          "file": "./examples/simple-vault/contracts/Vault.sol",
+          "file": "./contracts/Vault.sol",
           "contract": "Vault",
           "function": "withdraw(uint256)",
           "line_range": [31, 38],
@@ -185,7 +185,7 @@
           "evidence": "withdraw() emits Withdrawn(msg.sender, amount) during execution."
         },
         {
-          "file": "./examples/simple-vault/contracts/Vault.sol",
+          "file": "./contracts/Vault.sol",
           "contract": "Vault",
           "function": "event Withdrawn(address,uint256)",
           "line_range": [11, 11],
@@ -201,7 +201,7 @@
       "requirement_text": "R-WDR-004: Withdrawal SHOULD follow the checks-effects-interactions pattern.",
       "locations": [
         {
-          "file": "./examples/simple-vault/contracts/Vault.sol",
+          "file": "./contracts/Vault.sol",
           "contract": "Vault",
           "function": "withdraw(uint256)",
           "line_range": [31, 38],
@@ -217,7 +217,7 @@
       "requirement_text": "R-EMR-001: emergencyPause() MUST halt all deposits and withdrawals.",
       "locations": [
         {
-          "file": "./examples/simple-vault/contracts/Vault.sol",
+          "file": "./contracts/Vault.sol",
           "contract": "Vault",
           "function": "emergencyPause()",
           "line_range": [40, 42],
@@ -226,7 +226,7 @@
           "evidence": "emergencyPause() sets paused = true, and both deposit() and withdraw() enforce require(!paused) to halt operations."
         },
         {
-          "file": "./examples/simple-vault/contracts/Vault.sol",
+          "file": "./contracts/Vault.sol",
           "contract": "Vault",
           "function": "deposit()",
           "line_range": [23, 28],
@@ -235,7 +235,7 @@
           "evidence": "deposit() contains require(!paused, 'Paused') which enforces the halt when paused is true."
         },
         {
-          "file": "./examples/simple-vault/contracts/Vault.sol",
+          "file": "./contracts/Vault.sol",
           "contract": "Vault",
           "function": "withdraw(uint256)",
           "line_range": [31, 38],
@@ -251,7 +251,7 @@
       "requirement_text": "R-EMR-002: Only the owner MUST be able to call emergencyPause() and emergencyUnpause().",
       "locations": [
         {
-          "file": "./examples/simple-vault/contracts/Vault.sol",
+          "file": "./contracts/Vault.sol",
           "contract": "Vault",
           "function": "emergencyPause()",
           "line_range": [40, 42],
@@ -260,7 +260,7 @@
           "evidence": "emergencyPause() has onlyOwner modifier restricting access to the contract owner."
         },
         {
-          "file": "./examples/simple-vault/contracts/Vault.sol",
+          "file": "./contracts/Vault.sol",
           "contract": "Vault",
           "function": "emergencyUnpause()",
           "line_range": [45, 47],
@@ -276,7 +276,7 @@
       "requirement_text": "withdraw() parameter 'amount' must be of type uint256",
       "locations": [
         {
-          "file": "./examples/simple-vault/contracts/Vault.sol",
+          "file": "./contracts/Vault.sol",
           "contract": "Vault",
           "function": "withdraw(uint256)",
           "line_range": [31, 38],
@@ -292,7 +292,7 @@
       "requirement_text": "addToWhitelist() parameter 'addr' must be of type address",
       "locations": [
         {
-          "file": "./examples/simple-vault/contracts/Vault.sol",
+          "file": "./contracts/Vault.sol",
           "contract": "Vault",
           "function": "addToWhitelist(address)",
           "line_range": [49, 51],
@@ -308,7 +308,7 @@
       "requirement_text": "removeFromWhitelist() parameter 'addr' must be of type address",
       "locations": [
         {
-          "file": "./examples/simple-vault/contracts/Vault.sol",
+          "file": "./contracts/Vault.sol",
           "contract": "Vault",
           "function": "removeFromWhitelist(address)",
           "line_range": [53, 55],

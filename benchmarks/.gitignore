@@ -1,2 +1,5 @@
 # SPECA execution outputs (regenerated each run)
 cases/*/.speca/
+
+# Exception: case-000 has committed baseline fixtures
+!cases/case-000-mixed-simple-vault/.speca/

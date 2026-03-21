@@ -50,7 +50,7 @@
             {
               "physicalLocation": {
                 "artifactLocation": {
-                  "uri": "./examples/simple-vault/contracts/Vault.sol"
+                  "uri": "./contracts/Vault.sol"
                 },
                 "region": {
                   "startLine": 23,
@@ -70,7 +70,7 @@
             {
               "physicalLocation": {
                 "artifactLocation": {
-                  "uri": "./examples/simple-vault/contracts/Vault.sol"
+                  "uri": "./contracts/Vault.sol"
                 },
                 "region": {
                   "startLine": 45,
@@ -81,7 +81,7 @@
             {
               "physicalLocation": {
                 "artifactLocation": {
-                  "uri": "./examples/simple-vault/contracts/Vault.sol"
+                  "uri": "./contracts/Vault.sol"
                 },
                 "region": {
                   "startLine": 40,
@@ -101,7 +101,7 @@
             {
               "physicalLocation": {
                 "artifactLocation": {
-                  "uri": "./examples/simple-vault/contracts/Vault.sol"
+                  "uri": "./contracts/Vault.sol"
                 },
                 "region": {
                   "startLine": 31,

@@ -1,8 +1,8 @@
 {
   "extracted_at": "2026-02-17T00:00:00Z",
   "spec_sources": [
-    "./examples/simple-vault/docs/spec.md",
-    "./examples/simple-vault/docs/interface.yaml"
+    "./docs/spec.md",
+    "./docs/interface.yaml"
   ],
   "total_requirements": 15,
   "requirements": [
@@ -12,13 +12,13 @@
       "type": "access_control",
       "severity_hint": "high",
       "source": {
-        "file": "./examples/simple-vault/docs/spec.md",
+        "file": "./docs/spec.md",
         "line": 9,
         "section": "Access Control"
       },
       "modal": "MUST",
       "cross_refs": [
-        "./examples/simple-vault/docs/interface.yaml:withdraw.access"
+        "./docs/interface.yaml:withdraw.access"
       ]
     },
     {
@@ -27,14 +27,14 @@
       "type": "access_control",
       "severity_hint": "high",
       "source": {
-        "file": "./examples/simple-vault/docs/spec.md",
+        "file": "./docs/spec.md",
         "line": 10,
         "section": "Access Control"
       },
       "modal": "MUST",
       "cross_refs": [
-        "./examples/simple-vault/docs/interface.yaml:addToWhitelist.access",
-        "./examples/simple-vault/docs/interface.yaml:removeFromWhitelist.access"
+        "./docs/interface.yaml:addToWhitelist.access",
+        "./docs/interface.yaml:removeFromWhitelist.access"
       ]
     },
     {
@@ -43,14 +43,14 @@
       "type": "access_control",
       "severity_hint": "high",
       "source": {
-        "file": "./examples/simple-vault/docs/spec.md",
+        "file": "./docs/spec.md",
         "line": 11,
         "section": "Access Control"
       },
       "modal": "MUST",
       "cross_refs": [
-        "./examples/simple-vault/docs/interface.yaml:deposit.requirements",
-        "./examples/simple-vault/docs/interface.yaml:deposit.access"
+        "./docs/interface.yaml:deposit.requirements",
+        "./docs/interface.yaml:deposit.access"
       ]
     },
     {
@@ -59,7 +59,7 @@
       "type": "data_integrity",
       "severity_hint": "high",
       "source": {
-        "file": "./examples/simple-vault/docs/spec.md",
+        "file": "./docs/spec.md",
         "line": 14,
         "section": "Deposit"
       },
@@ -71,13 +71,13 @@
       "type": "validation",
       "severity_hint": "high",
       "source": {
-        "file": "./examples/simple-vault/docs/spec.md",
+        "file": "./docs/spec.md",
         "line": 15,
         "section": "Deposit"
       },
       "modal": "MUST",
       "cross_refs": [
-        "./examples/simple-vault/docs/interface.yaml:deposit.requirements"
+        "./docs/interface.yaml:deposit.requirements"
       ]
     },
     {
@@ -86,13 +86,13 @@
       "type": "event_emission",
       "severity_hint": "high",
       "source": {
-        "file": "./examples/simple-vault/docs/spec.md",
+        "file": "./docs/spec.md",
         "line": 16,
         "section": "Deposit"
       },
       "modal": "MUST",
       "cross_refs": [
-        "./examples/simple-vault/docs/interface.yaml:deposit.events"
+        "./docs/interface.yaml:deposit.events"
       ]
     },
     {
@@ -101,7 +101,7 @@
       "type": "state_transition",
       "severity_hint": "high",
       "source": {
-        "file": "./examples/simple-vault/docs/spec.md",
+        "file": "./docs/spec.md",
         "line": 19,
         "section": "Withdrawal"
       },
@@ -113,13 +113,13 @@
       "type": "validation",
       "severity_hint": "high",
       "source": {
-        "file": "./examples/simple-vault/docs/spec.md",
+        "file": "./docs/spec.md",
         "line": 20,
         "section": "Withdrawal"
       },
       "modal": "MUST",
       "cross_refs": [
-        "./examples/simple-vault/docs/interface.yaml:withdraw.requirements"
+        "./docs/interface.yaml:withdraw.requirements"
       ]
     },
     {
@@ -128,13 +128,13 @@
       "type": "event_emission",
       "severity_hint": "high",
       "source": {
-        "file": "./examples/simple-vault/docs/spec.md",
+        "file": "./docs/spec.md",
         "line": 21,
         "section": "Withdrawal"
       },
       "modal": "MUST",
       "cross_refs": [
-        "./examples/simple-vault/docs/interface.yaml:withdraw.events"
+        "./docs/interface.yaml:withdraw.events"
       ]
     },
     {
@@ -143,13 +143,13 @@
       "type": "state_transition",
       "severity_hint": "medium",
       "source": {
-        "file": "./examples/simple-vault/docs/spec.md",
+        "file": "./docs/spec.md",
         "line": 22,
         "section": "Withdrawal"
       },
       "modal": "SHOULD",
       "cross_refs": [
-        "./examples/simple-vault/docs/interface.yaml:withdraw.requirements"
+        "./docs/interface.yaml:withdraw.requirements"
       ]
     },
     {
@@ -158,13 +158,13 @@
       "type": "lifecycle",
       "severity_hint": "high",
       "source": {
-        "file": "./examples/simple-vault/docs/spec.md",
+        "file": "./docs/spec.md",
         "line": 25,
         "section": "Emergency"
       },
       "modal": "MUST",
       "cross_refs": [
-        "./examples/simple-vault/docs/interface.yaml:emergencyPause.requirements"
+        "./docs/interface.yaml:emergencyPause.requirements"
       ]
     },
     {
@@ -173,14 +173,14 @@
       "type": "access_control",
       "severity_hint": "high",
       "source": {
-        "file": "./examples/simple-vault/docs/spec.md",
+        "file": "./docs/spec.md",
         "line": 26,
         "section": "Emergency"
       },
       "modal": "MUST",
       "cross_refs": [
-        "./examples/simple-vault/docs/interface.yaml:emergencyPause.access",
-        "./examples/simple-vault/docs/interface.yaml:emergencyUnpause.access"
+        "./docs/interface.yaml:emergencyPause.access",
+        "./docs/interface.yaml:emergencyUnpause.access"
       ]
     },
     {
@@ -189,7 +189,7 @@
       "type": "validation",
       "severity_hint": "high",
       "source": {
-        "file": "./examples/simple-vault/docs/interface.yaml",
+        "file": "./docs/interface.yaml",
         "line": null,
         "section": "withdraw.params"
       },
@@ -201,7 +201,7 @@
       "type": "validation",
       "severity_hint": "high",
       "source": {
-        "file": "./examples/simple-vault/docs/interface.yaml",
+        "file": "./docs/interface.yaml",
         "line": null,
         "section": "addToWhitelist.params"
       },
@@ -213,7 +213,7 @@
       "type": "validation",
       "severity_hint": "high",
       "source": {
-        "file": "./examples/simple-vault/docs/interface.yaml",
+        "file": "./docs/interface.yaml",
         "line": null,
         "section": "removeFromWhitelist.params"
       },

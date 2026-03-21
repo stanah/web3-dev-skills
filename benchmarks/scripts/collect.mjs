@@ -114,5 +114,6 @@ if (process.argv[1] === import.meta.filename) {
     console.error('Error: <case-number> must be a non-negative integer');
     process.exit(1);
   }
-  scaffoldCase(process.cwd(), contestUrl, num, category, shortName);
+  const benchmarkRoot = join(import.meta.dirname, '..');
+  scaffoldCase(benchmarkRoot, contestUrl, num, category, shortName);
 }

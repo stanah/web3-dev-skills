@@ -20,7 +20,7 @@
       "proof_trace": {
         "code_refs": [
           {
-            "file": "./examples/simple-vault/contracts/Vault.sol",
+            "file": "./contracts/Vault.sol",
             "lines": [23, 28],
             "snippet": "    function deposit() external payable {\n        require(!paused, \"Paused\");\n        require(msg.value > 0, \"Zero deposit\");\n        balances[msg.sender] += msg.value;\n        emit Deposited(msg.sender, msg.value);\n    }"
           }
@@ -40,12 +40,12 @@
       "proof_trace": {
         "code_refs": [
           {
-            "file": "./examples/simple-vault/contracts/Vault.sol",
+            "file": "./contracts/Vault.sol",
             "lines": [45, 47],
             "snippet": "    function emergencyUnpause() external {\n        paused = false;\n    }"
           },
           {
-            "file": "./examples/simple-vault/contracts/Vault.sol",
+            "file": "./contracts/Vault.sol",
             "lines": [40, 42],
             "snippet": "    function emergencyPause() external onlyOwner {\n        paused = true;\n    }"
           }
@@ -65,7 +65,7 @@
       "proof_trace": {
         "code_refs": [
           {
-            "file": "./examples/simple-vault/contracts/Vault.sol",
+            "file": "./contracts/Vault.sol",
             "lines": [31, 38],
             "snippet": "    function withdraw(uint256 amount) external onlyOwner {\n        require(!paused, \"Paused\");\n        require(amount <= address(this).balance, \"Insufficient balance\");\n        emit Withdrawn(msg.sender, amount);\n        (bool success, ) = msg.sender.call{value: amount}(\"\");\n        require(success, \"Transfer failed\");\n        // state update after external call - reentrancy risk\n    }"
           }

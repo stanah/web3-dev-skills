@@ -1,11 +1,10 @@
 {
   "version": "1.0",
   "spec_paths": [
-    "./examples/simple-vault/docs/spec.md",
-    "./examples/simple-vault/docs/interface.yaml"
+    "./docs/spec.md"
   ],
   "source_paths": [
-    "./examples/simple-vault/contracts/"
+    "./contracts/"
   ],
   "threat_model": {
     "actors": {
