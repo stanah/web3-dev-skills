@@ -5,7 +5,7 @@ import { parseArgs } from 'node:util';
  * Filter checklist items by priority, type, and return a batch slice.
  */
 export function filterChecklist(checklistData, options = {}) {
-  const { priority, type, batchIndex, batchSize, includeMeta } = options;
+  const { priority, type, batchIndex, batchSize, includeMeta, mappingData } = options;
 
   let items = checklistData.checklist;
 
@@ -18,12 +18,13 @@ export function filterChecklist(checklistData, options = {}) {
 
   const totalFiltered = items.length;
 
+  let result;
   if (batchIndex !== undefined && batchSize !== undefined) {
     const start = batchIndex * batchSize;
     const sliced = items.slice(start, start + batchSize);
 
     if (includeMeta) {
-      return {
+      result = {
         meta: {
           totalFiltered,
           totalBatches: Math.ceil(totalFiltered / batchSize),
@@ -32,14 +33,31 @@ export function filterChecklist(checklistData, options = {}) {
         },
         items: sliced
       };
+    } else {
+      result = sliced;
     }
-    return sliced;
+  } else if (includeMeta) {
+    result = { meta: { totalFiltered, totalBatches: 1, batchIndex: 0, batchSize: totalFiltered }, items };
+  } else {
+    result = items;
   }
 
-  if (includeMeta) {
-    return { meta: { totalFiltered, totalBatches: 1, batchIndex: 0, batchSize: totalFiltered }, items };
+  // Enrich items with code locations if mappingData provided
+  if (mappingData) {
+    const mappingIndex = Object.fromEntries(
+      mappingData.mappings.map(m => [m.requirement_id, m])
+    );
+    const resultItems = result?.items ?? result;
+    for (const item of resultItems) {
+      const mapping = mappingIndex[item.requirement_id];
+      if (mapping) {
+        item._locations = mapping.locations;
+        item._requirement_text = mapping.requirement_text;
+      }
+    }
   }
-  return items;
+
+  return result;
 }
 
 // CLI entry point
@@ -64,22 +82,11 @@ if (process.argv[1] === import.meta.filename) {
     includeMeta: true
   };
 
-  const result = filterChecklist(checklistData, opts);
-
-  // If mapping file provided, enrich items with code locations
   if (values.mapping) {
-    const mappingData = JSON.parse(readFileSync(values.mapping, 'utf-8'));
-    const mappingIndex = Object.fromEntries(
-      mappingData.mappings.map(m => [m.requirement_id, m])
-    );
-    for (const item of result.items) {
-      const mapping = mappingIndex[item.requirement_id];
-      if (mapping) {
-        item._locations = mapping.locations;
-        item._requirement_text = mapping.requirement_text;
-      }
-    }
+    opts.mappingData = JSON.parse(readFileSync(values.mapping, 'utf-8'));
   }
+
+  const result = filterChecklist(checklistData, opts);
 
   console.log(JSON.stringify(result, null, 2));
 }

@@ -41,4 +41,20 @@ describe('filterChecklist', () => {
     assert.equal(result.meta.totalBatches, 3);
     assert.equal(result.items.length, 2);
   });
+
+  it('enriches items with locations when mappingData provided', () => {
+    const checklistData = {
+      checklist: [
+        { id: 'CHK-AUTH-001-a', requirement_id: 'SPEC-AUTH-001', check_type: 'static', priority: 'critical', property: 'test' }
+      ]
+    };
+    const mappingData = {
+      mappings: [
+        { requirement_id: 'SPEC-AUTH-001', requirement_text: 'Must check owner', locations: [{ file: 'Vault.sol', line_range: [10, 20] }] }
+      ]
+    };
+    const result = filterChecklist(checklistData, { includeMeta: true, mappingData });
+    assert.deepStrictEqual(result.items[0]._locations, [{ file: 'Vault.sol', line_range: [10, 20] }]);
+    assert.equal(result.items[0]._requirement_text, 'Must check owner');
+  });
 });
