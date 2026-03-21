@@ -1,0 +1,18 @@
+{
+  "version": "1.0",
+  "description": "SPECA detection accuracy benchmark using Code4rena contest cases",
+  "created_at": "2026-02-21",
+  "selection_criteria": {
+    "max_files": 3,
+    "max_lines": 500,
+    "solidity_version": "^0.8.x",
+    "min_confirmed_findings": 1,
+    "source": "code4rena"
+  },
+  "evaluation": {
+    "runs_per_case": 3,
+    "aggregation": "median",
+    "line_tolerance": 5
+  },
+  "cases": []
+}

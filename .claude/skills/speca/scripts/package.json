@@ -1,0 +1,12 @@
+{
+  "name": "speca-scripts",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "SPECA pipeline helper scripts for JSON processing and report generation",
+  "scripts": {
+    "test": "node --test __tests__/*.test.mjs"
+  },
+  "engines": {
+    "node": ">=20.11.0"
+  }
+}

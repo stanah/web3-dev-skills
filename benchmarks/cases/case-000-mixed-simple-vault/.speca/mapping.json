@@ -1,0 +1,323 @@
+{
+  "mapped_at": "2026-02-17T00:00:00Z",
+  "source_files": [
+    "./contracts/Vault.sol"
+  ],
+  "total_requirements": 15,
+  "mapped": 15,
+  "unmapped": 0,
+  "mappings": [
+    {
+      "requirement_id": "R-AUTH-001",
+      "requirement_text": "R-AUTH-001: Only the contract owner MUST be able to call withdraw().",
+      "locations": [
+        {
+          "file": "./contracts/Vault.sol",
+          "contract": "Vault",
+          "function": "withdraw(uint256)",
+          "line_range": [31, 38],
+          "confidence": 0.95,
+          "modifiers": ["onlyOwner"],
+          "evidence": "withdraw() has onlyOwner modifier which restricts access to the contract owner via require(msg.sender == owner)."
+        },
+        {
+          "file": "./contracts/Vault.sol",
+          "contract": "Vault",
+          "function": "modifier onlyOwner",
+          "line_range": [17, 20],
+          "confidence": 0.85,
+          "modifiers": [],
+          "evidence": "onlyOwner modifier implements the ownership check with require(msg.sender == owner, 'Not owner')."
+        }
+      ],
+      "status": "mapped"
+    },
+    {
+      "requirement_id": "R-AUTH-002",
+      "requirement_text": "R-AUTH-002: The contract owner MUST be able to add and remove addresses from the whitelist.",
+      "locations": [
+        {
+          "file": "./contracts/Vault.sol",
+          "contract": "Vault",
+          "function": "addToWhitelist(address)",
+          "line_range": [49, 51],
+          "confidence": 0.95,
+          "modifiers": ["onlyOwner"],
+          "evidence": "addToWhitelist() is restricted to owner via onlyOwner modifier and sets whitelist[addr] = true."
+        },
+        {
+          "file": "./contracts/Vault.sol",
+          "contract": "Vault",
+          "function": "removeFromWhitelist(address)",
+          "line_range": [53, 55],
+          "confidence": 0.95,
+          "modifiers": ["onlyOwner"],
+          "evidence": "removeFromWhitelist() is restricted to owner via onlyOwner modifier and sets whitelist[addr] = false."
+        }
+      ],
+      "status": "mapped"
+    },
+    {
+      "requirement_id": "R-AUTH-003",
+      "requirement_text": "R-AUTH-003: Only whitelisted addresses or the owner MUST be able to call deposit().",
+      "locations": [
+        {
+          "file": "./contracts/Vault.sol",
+          "contract": "Vault",
+          "function": "deposit()",
+          "line_range": [23, 28],
+          "confidence": 0.60,
+          "modifiers": [],
+          "evidence": "deposit() exists but is missing any whitelist or owner check — any address can currently call it, violating the access restriction."
+        }
+      ],
+      "status": "mapped"
+    },
+    {
+      "requirement_id": "R-DEP-001",
+      "requirement_text": "R-DEP-001: deposit() MUST accept ETH and credit the sender's balance.",
+      "locations": [
+        {
+          "file": "./contracts/Vault.sol",
+          "contract": "Vault",
+          "function": "deposit()",
+          "line_range": [23, 28],
+          "confidence": 0.95,
+          "modifiers": [],
+          "evidence": "deposit() is payable and credits the sender's balance via balances[msg.sender] += msg.value."
+        },
+        {
+          "file": "./contracts/Vault.sol",
+          "contract": "Vault",
+          "function": "var balances",
+          "line_range": [8, 8],
+          "confidence": 0.70,
+          "modifiers": [],
+          "evidence": "State variable balances (mapping(address => uint256)) stores per-address deposit balances."
+        }
+      ],
+      "status": "mapped"
+    },
+    {
+      "requirement_id": "R-DEP-002",
+      "requirement_text": "R-DEP-002: deposit() MUST revert if msg.value is 0.",
+      "locations": [
+        {
+          "file": "./contracts/Vault.sol",
+          "contract": "Vault",
+          "function": "deposit()",
+          "line_range": [23, 28],
+          "confidence": 0.95,
+          "modifiers": [],
+          "evidence": "deposit() contains require(msg.value > 0, 'Zero deposit') which reverts on zero-value deposits."
+        }
+      ],
+      "status": "mapped"
+    },
+    {
+      "requirement_id": "R-DEP-003",
+      "requirement_text": "R-DEP-003: A Deposited(address, uint256) event MUST be emitted on successful deposit.",
+      "locations": [
+        {
+          "file": "./contracts/Vault.sol",
+          "contract": "Vault",
+          "function": "deposit()",
+          "line_range": [23, 28],
+          "confidence": 0.95,
+          "modifiers": [],
+          "evidence": "deposit() emits Deposited(msg.sender, msg.value) on successful execution."
+        },
+        {
+          "file": "./contracts/Vault.sol",
+          "contract": "Vault",
+          "function": "event Deposited(address,uint256)",
+          "line_range": [10, 10],
+          "confidence": 0.90,
+          "modifiers": [],
+          "evidence": "Event Deposited(address indexed sender, uint256 amount) is declared at line 10."
+        }
+      ],
+      "status": "mapped"
+    },
+    {
+      "requirement_id": "R-WDR-001",
+      "requirement_text": "R-WDR-001: withdraw(uint256 amount) MUST transfer the specified amount to the owner.",
+      "locations": [
+        {
+          "file": "./contracts/Vault.sol",
+          "contract": "Vault",
+          "function": "withdraw(uint256)",
+          "line_range": [31, 38],
+          "confidence": 0.95,
+          "modifiers": ["onlyOwner"],
+          "evidence": "withdraw() transfers ETH to msg.sender (the owner, enforced by onlyOwner) via .call{value: amount}."
+        }
+      ],
+      "status": "mapped"
+    },
+    {
+      "requirement_id": "R-WDR-002",
+      "requirement_text": "R-WDR-002: withdraw() MUST revert if amount exceeds the contract balance.",
+      "locations": [
+        {
+          "file": "./contracts/Vault.sol",
+          "contract": "Vault",
+          "function": "withdraw(uint256)",
+          "line_range": [31, 38],
+          "confidence": 0.95,
+          "modifiers": ["onlyOwner"],
+          "evidence": "withdraw() contains require(amount <= address(this).balance, 'Insufficient balance') which reverts when amount exceeds contract balance."
+        }
+      ],
+      "status": "mapped"
+    },
+    {
+      "requirement_id": "R-WDR-003",
+      "requirement_text": "R-WDR-003: A Withdrawn(address, uint256) event MUST be emitted on successful withdrawal.",
+      "locations": [
+        {
+          "file": "./contracts/Vault.sol",
+          "contract": "Vault",
+          "function": "withdraw(uint256)",
+          "line_range": [31, 38],
+          "confidence": 0.95,
+          "modifiers": ["onlyOwner"],
+          "evidence": "withdraw() emits Withdrawn(msg.sender, amount) during execution."
+        },
+        {
+          "file": "./contracts/Vault.sol",
+          "contract": "Vault",
+          "function": "event Withdrawn(address,uint256)",
+          "line_range": [11, 11],
+          "confidence": 0.90,
+          "modifiers": [],
+          "evidence": "Event Withdrawn(address indexed to, uint256 amount) is declared at line 11."
+        }
+      ],
+      "status": "mapped"
+    },
+    {
+      "requirement_id": "R-WDR-004",
+      "requirement_text": "R-WDR-004: Withdrawal SHOULD follow the checks-effects-interactions pattern.",
+      "locations": [
+        {
+          "file": "./contracts/Vault.sol",
+          "contract": "Vault",
+          "function": "withdraw(uint256)",
+          "line_range": [31, 38],
+          "confidence": 0.75,
+          "modifiers": ["onlyOwner"],
+          "evidence": "withdraw() performs external call via .call{value: amount} at line 35 before any state update — the checks-effects-interactions pattern is violated."
+        }
+      ],
+      "status": "mapped"
+    },
+    {
+      "requirement_id": "R-EMR-001",
+      "requirement_text": "R-EMR-001: emergencyPause() MUST halt all deposits and withdrawals.",
+      "locations": [
+        {
+          "file": "./contracts/Vault.sol",
+          "contract": "Vault",
+          "function": "emergencyPause()",
+          "line_range": [40, 42],
+          "confidence": 0.90,
+          "modifiers": ["onlyOwner"],
+          "evidence": "emergencyPause() sets paused = true, and both deposit() and withdraw() enforce require(!paused) to halt operations."
+        },
+        {
+          "file": "./contracts/Vault.sol",
+          "contract": "Vault",
+          "function": "deposit()",
+          "line_range": [23, 28],
+          "confidence": 0.70,
+          "modifiers": [],
+          "evidence": "deposit() contains require(!paused, 'Paused') which enforces the halt when paused is true."
+        },
+        {
+          "file": "./contracts/Vault.sol",
+          "contract": "Vault",
+          "function": "withdraw(uint256)",
+          "line_range": [31, 38],
+          "confidence": 0.70,
+          "modifiers": ["onlyOwner"],
+          "evidence": "withdraw() contains require(!paused, 'Paused') which enforces the halt when paused is true."
+        }
+      ],
+      "status": "mapped"
+    },
+    {
+      "requirement_id": "R-EMR-002",
+      "requirement_text": "R-EMR-002: Only the owner MUST be able to call emergencyPause() and emergencyUnpause().",
+      "locations": [
+        {
+          "file": "./contracts/Vault.sol",
+          "contract": "Vault",
+          "function": "emergencyPause()",
+          "line_range": [40, 42],
+          "confidence": 0.95,
+          "modifiers": ["onlyOwner"],
+          "evidence": "emergencyPause() has onlyOwner modifier restricting access to the contract owner."
+        },
+        {
+          "file": "./contracts/Vault.sol",
+          "contract": "Vault",
+          "function": "emergencyUnpause()",
+          "line_range": [45, 47],
+          "confidence": 0.60,
+          "modifiers": [],
+          "evidence": "emergencyUnpause() is missing the onlyOwner modifier — any address can call it, violating the owner-only access restriction."
+        }
+      ],
+      "status": "mapped"
+    },
+    {
+      "requirement_id": "SPEC-VAL-001",
+      "requirement_text": "withdraw() parameter 'amount' must be of type uint256",
+      "locations": [
+        {
+          "file": "./contracts/Vault.sol",
+          "contract": "Vault",
+          "function": "withdraw(uint256)",
+          "line_range": [31, 38],
+          "confidence": 0.95,
+          "modifiers": ["onlyOwner"],
+          "evidence": "withdraw() declares parameter amount of type uint256 matching the specification."
+        }
+      ],
+      "status": "mapped"
+    },
+    {
+      "requirement_id": "SPEC-VAL-002",
+      "requirement_text": "addToWhitelist() parameter 'addr' must be of type address",
+      "locations": [
+        {
+          "file": "./contracts/Vault.sol",
+          "contract": "Vault",
+          "function": "addToWhitelist(address)",
+          "line_range": [49, 51],
+          "confidence": 0.95,
+          "modifiers": ["onlyOwner"],
+          "evidence": "addToWhitelist() declares parameter addr of type address matching the specification."
+        }
+      ],
+      "status": "mapped"
+    },
+    {
+      "requirement_id": "SPEC-VAL-003",
+      "requirement_text": "removeFromWhitelist() parameter 'addr' must be of type address",
+      "locations": [
+        {
+          "file": "./contracts/Vault.sol",
+          "contract": "Vault",
+          "function": "removeFromWhitelist(address)",
+          "line_range": [53, 55],
+          "confidence": 0.95,
+          "modifiers": ["onlyOwner"],
+          "evidence": "removeFromWhitelist() declares parameter addr of type address matching the specification."
+        }
+      ],
+      "status": "mapped"
+    }
+  ]
+}

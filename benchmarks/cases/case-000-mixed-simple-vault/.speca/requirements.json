@@ -1,0 +1,223 @@
+{
+  "extracted_at": "2026-02-17T00:00:00Z",
+  "spec_sources": [
+    "./docs/spec.md",
+    "./docs/interface.yaml"
+  ],
+  "total_requirements": 15,
+  "requirements": [
+    {
+      "id": "R-AUTH-001",
+      "text": "R-AUTH-001: Only the contract owner MUST be able to call withdraw().",
+      "type": "access_control",
+      "severity_hint": "high",
+      "source": {
+        "file": "./docs/spec.md",
+        "line": 9,
+        "section": "Access Control"
+      },
+      "modal": "MUST",
+      "cross_refs": [
+        "./docs/interface.yaml:withdraw.access"
+      ]
+    },
+    {
+      "id": "R-AUTH-002",
+      "text": "R-AUTH-002: The contract owner MUST be able to add and remove addresses from the whitelist.",
+      "type": "access_control",
+      "severity_hint": "high",
+      "source": {
+        "file": "./docs/spec.md",
+        "line": 10,
+        "section": "Access Control"
+      },
+      "modal": "MUST",
+      "cross_refs": [
+        "./docs/interface.yaml:addToWhitelist.access",
+        "./docs/interface.yaml:removeFromWhitelist.access"
+      ]
+    },
+    {
+      "id": "R-AUTH-003",
+      "text": "R-AUTH-003: Only whitelisted addresses or the owner MUST be able to call deposit().",
+      "type": "access_control",
+      "severity_hint": "high",
+      "source": {
+        "file": "./docs/spec.md",
+        "line": 11,
+        "section": "Access Control"
+      },
+      "modal": "MUST",
+      "cross_refs": [
+        "./docs/interface.yaml:deposit.requirements",
+        "./docs/interface.yaml:deposit.access"
+      ]
+    },
+    {
+      "id": "R-DEP-001",
+      "text": "R-DEP-001: deposit() MUST accept ETH and credit the sender's balance.",
+      "type": "data_integrity",
+      "severity_hint": "high",
+      "source": {
+        "file": "./docs/spec.md",
+        "line": 14,
+        "section": "Deposit"
+      },
+      "modal": "MUST"
+    },
+    {
+      "id": "R-DEP-002",
+      "text": "R-DEP-002: deposit() MUST revert if msg.value is 0.",
+      "type": "validation",
+      "severity_hint": "high",
+      "source": {
+        "file": "./docs/spec.md",
+        "line": 15,
+        "section": "Deposit"
+      },
+      "modal": "MUST",
+      "cross_refs": [
+        "./docs/interface.yaml:deposit.requirements"
+      ]
+    },
+    {
+      "id": "R-DEP-003",
+      "text": "R-DEP-003: A Deposited(address, uint256) event MUST be emitted on successful deposit.",
+      "type": "event_emission",
+      "severity_hint": "high",
+      "source": {
+        "file": "./docs/spec.md",
+        "line": 16,
+        "section": "Deposit"
+      },
+      "modal": "MUST",
+      "cross_refs": [
+        "./docs/interface.yaml:deposit.events"
+      ]
+    },
+    {
+      "id": "R-WDR-001",
+      "text": "R-WDR-001: withdraw(uint256 amount) MUST transfer the specified amount to the owner.",
+      "type": "state_transition",
+      "severity_hint": "high",
+      "source": {
+        "file": "./docs/spec.md",
+        "line": 19,
+        "section": "Withdrawal"
+      },
+      "modal": "MUST"
+    },
+    {
+      "id": "R-WDR-002",
+      "text": "R-WDR-002: withdraw() MUST revert if amount exceeds the contract balance.",
+      "type": "validation",
+      "severity_hint": "high",
+      "source": {
+        "file": "./docs/spec.md",
+        "line": 20,
+        "section": "Withdrawal"
+      },
+      "modal": "MUST",
+      "cross_refs": [
+        "./docs/interface.yaml:withdraw.requirements"
+      ]
+    },
+    {
+      "id": "R-WDR-003",
+      "text": "R-WDR-003: A Withdrawn(address, uint256) event MUST be emitted on successful withdrawal.",
+      "type": "event_emission",
+      "severity_hint": "high",
+      "source": {
+        "file": "./docs/spec.md",
+        "line": 21,
+        "section": "Withdrawal"
+      },
+      "modal": "MUST",
+      "cross_refs": [
+        "./docs/interface.yaml:withdraw.events"
+      ]
+    },
+    {
+      "id": "R-WDR-004",
+      "text": "R-WDR-004: Withdrawal SHOULD follow the checks-effects-interactions pattern.",
+      "type": "state_transition",
+      "severity_hint": "medium",
+      "source": {
+        "file": "./docs/spec.md",
+        "line": 22,
+        "section": "Withdrawal"
+      },
+      "modal": "SHOULD",
+      "cross_refs": [
+        "./docs/interface.yaml:withdraw.requirements"
+      ]
+    },
+    {
+      "id": "R-EMR-001",
+      "text": "R-EMR-001: emergencyPause() MUST halt all deposits and withdrawals.",
+      "type": "lifecycle",
+      "severity_hint": "high",
+      "source": {
+        "file": "./docs/spec.md",
+        "line": 25,
+        "section": "Emergency"
+      },
+      "modal": "MUST",
+      "cross_refs": [
+        "./docs/interface.yaml:emergencyPause.requirements"
+      ]
+    },
+    {
+      "id": "R-EMR-002",
+      "text": "R-EMR-002: Only the owner MUST be able to call emergencyPause() and emergencyUnpause().",
+      "type": "access_control",
+      "severity_hint": "high",
+      "source": {
+        "file": "./docs/spec.md",
+        "line": 26,
+        "section": "Emergency"
+      },
+      "modal": "MUST",
+      "cross_refs": [
+        "./docs/interface.yaml:emergencyPause.access",
+        "./docs/interface.yaml:emergencyUnpause.access"
+      ]
+    },
+    {
+      "id": "SPEC-VAL-001",
+      "text": "withdraw() parameter 'amount' must be of type uint256",
+      "type": "validation",
+      "severity_hint": "high",
+      "source": {
+        "file": "./docs/interface.yaml",
+        "line": null,
+        "section": "withdraw.params"
+      },
+      "modal": "MUST"
+    },
+    {
+      "id": "SPEC-VAL-002",
+      "text": "addToWhitelist() parameter 'addr' must be of type address",
+      "type": "validation",
+      "severity_hint": "high",
+      "source": {
+        "file": "./docs/interface.yaml",
+        "line": null,
+        "section": "addToWhitelist.params"
+      },
+      "modal": "MUST"
+    },
+    {
+      "id": "SPEC-VAL-003",
+      "text": "removeFromWhitelist() parameter 'addr' must be of type address",
+      "type": "validation",
+      "severity_hint": "high",
+      "source": {
+        "file": "./docs/interface.yaml",
+        "line": null,
+        "section": "removeFromWhitelist.params"
+      },
+      "modal": "MUST"
+    }
+  ]
+}

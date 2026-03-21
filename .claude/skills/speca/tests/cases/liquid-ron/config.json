@@ -1,0 +1,25 @@
+{
+  "version": "1.0",
+  "language": "en",
+  "spec_paths": ["./docs/spec.md"],
+  "source_paths": ["./contracts/"],
+  "threat_model": {
+    "actors": {
+      "owner": "TRUSTED",
+      "operator": "SEMI_TRUSTED",
+      "user": "UNTRUSTED",
+      "attacker": "UNTRUSTED"
+    },
+    "boundaries": [
+      "owner -> admin functions (pause, setFees, setDelegator)",
+      "operator -> delegation functions (stake, unstake, claimRewards)",
+      "user -> deposit, withdraw, claimRewards"
+    ],
+    "assumptions": [
+      "Solidity compiler version is ^0.8.x (built-in overflow protection)",
+      "EVM execution is deterministic",
+      "Block timestamp can be manipulated within ~15 seconds",
+      "RON token is the native token of Ronin chain"
+    ]
+  }
+}
