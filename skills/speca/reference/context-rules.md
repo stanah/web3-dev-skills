@@ -22,7 +22,7 @@ Violation of these rules wastes context and degrades audit quality.
 All intermediate data access MUST go through `speca-cli.mjs`:
 
 ```
-CLI=".claude/skills/speca/scripts/speca-cli.mjs"
+CLI="$SPECA_DIR/scripts/speca-cli.mjs"
 ```
 
 ### Step 1: Get overview with summary
@@ -61,6 +61,6 @@ Solidity files may be read with the Read tool, but ONLY specific line ranges:
 
 These files may be read directly with the Read tool:
 
-- Phase instruction files: `.claude/skills/speca/phases/*.md`
-- Reference files: `.claude/skills/speca/reference/*.md`
+- Phase instruction files: `$SPECA_DIR/phases/*.md`
+- Reference files: `$SPECA_DIR/reference/*.md`
 - Generated reports: `.speca/reports/*.md` (for post-generation polishing only)

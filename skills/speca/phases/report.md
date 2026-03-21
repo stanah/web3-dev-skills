@@ -1,7 +1,7 @@
 # SPECA Report Phase
 
 ## Context Management
-Read `.claude/skills/speca/reference/context-rules.md` and follow strictly.
+Read `$SPECA_DIR/reference/context-rules.md` and follow strictly.
 
 You are generating the final audit report from SPECA pipeline artifacts. This produces two output files: a human-readable Markdown report and a machine-readable SARIF v2.1.0 file. This is the final step of the SPECA pipeline.
 
@@ -9,14 +9,14 @@ You are generating the final audit report from SPECA pipeline artifacts. This pr
 
 1. Query findings summary to check existence and extract metadata:
    ```bash
-   node .claude/skills/speca/scripts/speca-cli.mjs query --file findings --mode summary
+   node $SPECA_DIR/scripts/speca-cli.mjs query --file findings --mode summary
    ```
    If findings are missing, stop: "Run `/speca audit` first."
    Extract: `audited_at`, `checklist_version`, `total_checks_audited`, `total_findings`, `findings_by_severity`.
 
 2. Query config summary to extract target and language settings:
    ```bash
-   node .claude/skills/speca/scripts/speca-cli.mjs config --action summary
+   node $SPECA_DIR/scripts/speca-cli.mjs config --action summary
    ```
    If config is missing, warn. Set `has_config = false`.
    If config exists, extract `threat_model`, `language` (default: `"en"`), and determine `targetName` from project directory.
@@ -37,7 +37,7 @@ mkdir -p .speca/reports
 Use the report subcommand to generate the full Markdown report skeleton:
 
 ```bash
-node .claude/skills/speca/scripts/speca-cli.mjs report \
+node $SPECA_DIR/scripts/speca-cli.mjs report \
   --format md \
   --output .speca/reports/YYYY-MM-DD-report.md \
   --date "YYYY-MM-DD" \
@@ -70,7 +70,7 @@ After the skeleton is generated, read the skeleton file and:
 ### Step 1d: Compute Coverage Statistics
 
 ```bash
-node .claude/skills/speca/scripts/speca-cli.mjs stats \
+node $SPECA_DIR/scripts/speca-cli.mjs stats \
   --findings .speca/findings.json \
   --checklist .speca/checklist.json \
   --format json
@@ -108,7 +108,7 @@ If `has_test_results`:
 The SARIF generation is entirely handled by the CLI:
 
 ```bash
-node .claude/skills/speca/scripts/speca-cli.mjs report \
+node $SPECA_DIR/scripts/speca-cli.mjs report \
   --format sarif \
   --output .speca/reports/YYYY-MM-DD-report.sarif
 ```
