@@ -3,14 +3,14 @@
 You are performing a static security audit of Solidity smart contract source code against the specification-derived checklist. This is the core value-producing step. Your goal is to identify real vulnerabilities with concrete code evidence while minimizing false positives through threat model filtering.
 
 ## Context Management
-Read `.claude/skills/speca/reference/context-rules.md` and follow strictly.
+Read `$SPECA_DIR/reference/context-rules.md` and follow strictly.
 
 ## Prerequisites Check
 
-1. Run `node .claude/skills/speca/scripts/speca-cli.mjs config --action summary`. If missing, stop: "Run `/speca init` first."
+1. Run `node $SPECA_DIR/scripts/speca-cli.mjs config --action summary`. If missing, stop: "Run `/speca init` first."
 2. Extract `threat_model` and `language` (default: `"en"`).
-3. Run `node .claude/skills/speca/scripts/speca-cli.mjs filter --input .speca/checklist.json --type static --batch-index 0 --batch-size 1` to verify checklist exists. If missing, stop: "Run `/speca checklist` first."
-4. Run `node .claude/skills/speca/scripts/speca-cli.mjs query --file mapping --mode get --id <req_id>` to verify mapping exists. If missing, stop: "Run `/speca map` first."
+3. Run `node $SPECA_DIR/scripts/speca-cli.mjs filter --input .speca/checklist.json --type static --batch-index 0 --batch-size 1` to verify checklist exists. If missing, stop: "Run `/speca checklist` first."
+4. Run `node $SPECA_DIR/scripts/speca-cli.mjs query --file mapping --mode get --id <req_id>` to verify mapping exists. If missing, stop: "Run `/speca map` first."
 5. Load Solidity source files listed in mapping data's `source_files` using the Read tool with `offset`/`limit` parameters matching `line_range` from mapping data.
 
 ### Checkpoint Support
@@ -18,11 +18,11 @@ Read `.claude/skills/speca/reference/context-rules.md` and follow strictly.
 Determine config hash and check for existing progress:
 
 ```bash
-node .claude/skills/speca/scripts/speca-cli.mjs config --action hash
+node $SPECA_DIR/scripts/speca-cli.mjs config --action hash
 ```
 
 ```bash
-node .claude/skills/speca/scripts/speca-cli.mjs progress --phase audit --action should-resume
+node $SPECA_DIR/scripts/speca-cli.mjs progress --phase audit --action should-resume
 ```
 
 - `"fresh"` → Start from beginning
@@ -41,7 +41,7 @@ If `$ARGUMENTS` contains `--resume`, force resume behavior.
 Use `speca-cli.mjs` to get static checks sorted by priority:
 
 ```bash
-node .claude/skills/speca/scripts/speca-cli.mjs filter \
+node $SPECA_DIR/scripts/speca-cli.mjs filter \
   --input .speca/checklist.json \
   --type static \
   --batch-index 0 --batch-size 5
@@ -60,7 +60,7 @@ This returns the first batch of 5 static checklist items with metadata:
 For a fresh start, initialize the findings file:
 
 ```bash
-node .claude/skills/speca/scripts/speca-cli.mjs record \
+node $SPECA_DIR/scripts/speca-cli.mjs record \
   --init \
   --audited-at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
   --checklist-version "<generated_at from checklist.json>"
@@ -74,7 +74,7 @@ mkdir -p .speca/progress/audit-batches
 ### Step 1c: Initialize Progress
 
 ```bash
-echo '{"phase":"audit","status":"in_progress","started_at":"<ISO timestamp>","updated_at":"<ISO timestamp>","total_items":<totalFiltered>,"completed_items":0,"current_batch":0,"batch_size":5,"config_hash":"<hash>"}' | node .claude/skills/speca/scripts/speca-cli.mjs progress --phase audit --action save
+echo '{"phase":"audit","status":"in_progress","started_at":"<ISO timestamp>","updated_at":"<ISO timestamp>","total_items":<totalFiltered>,"completed_items":0,"current_batch":0,"batch_size":5,"config_hash":"<hash>"}' | node $SPECA_DIR/scripts/speca-cli.mjs progress --phase audit --action save
 ```
 
 ---
@@ -86,7 +86,7 @@ For each batch of 5 checklist items:
 ### Step 2a: Load Batch
 
 ```bash
-node .claude/skills/speca/scripts/speca-cli.mjs filter \
+node $SPECA_DIR/scripts/speca-cli.mjs filter \
   --input .speca/checklist.json \
   --type static \
   --mapping .speca/mapping.json \
@@ -155,13 +155,13 @@ Each finding MUST include:
 Save this batch's findings to a batch file:
 
 ```bash
-echo '<JSON array of findings>' | node .claude/skills/speca/scripts/speca-cli.mjs record --write-batch --batch-index <N>
+echo '<JSON array of findings>' | node $SPECA_DIR/scripts/speca-cli.mjs record --write-batch --batch-index <N>
 ```
 
 ### Step 2f: Update Progress
 
 ```bash
-echo '{"phase":"audit","status":"in_progress","started_at":"<original>","updated_at":"<ISO timestamp>","total_items":<total>,"completed_items":<completed>,"current_batch":<next_batch>,"batch_size":5,"config_hash":"<hash>"}' | node .claude/skills/speca/scripts/speca-cli.mjs progress --phase audit --action save
+echo '{"phase":"audit","status":"in_progress","started_at":"<original>","updated_at":"<ISO timestamp>","total_items":<total>,"completed_items":<completed>,"current_batch":<next_batch>,"batch_size":5,"config_hash":"<hash>"}' | node $SPECA_DIR/scripts/speca-cli.mjs progress --phase audit --action save
 ```
 
 ### Step 2g: Repeat
@@ -175,7 +175,7 @@ Continue to next batch until all batches processed.
 After all batches complete, merge findings:
 
 ```bash
-node .claude/skills/speca/scripts/speca-cli.mjs merge \
+node $SPECA_DIR/scripts/speca-cli.mjs merge \
   --audited-at "<timestamp>" \
   --checklist-version "<checklist generated_at>"
 ```
@@ -187,7 +187,7 @@ This reads all `batch-*.json` files, deduplicates, sorts by severity, and writes
 ## Phase 4: Compute Statistics
 
 ```bash
-node .claude/skills/speca/scripts/speca-cli.mjs stats \
+node $SPECA_DIR/scripts/speca-cli.mjs stats \
   --findings .speca/findings.json \
   --checklist .speca/checklist.json \
   --format text
@@ -230,7 +230,7 @@ Next steps:
 
 Mark progress completed:
 ```bash
-echo '{"phase":"audit","status":"completed","config_hash":"<hash>","updated_at":"<ISO timestamp>"}' | node .claude/skills/speca/scripts/speca-cli.mjs progress --phase audit --action save
+echo '{"phase":"audit","status":"completed","config_hash":"<hash>","updated_at":"<ISO timestamp>"}' | node $SPECA_DIR/scripts/speca-cli.mjs progress --phase audit --action save
 ```
 
 ---

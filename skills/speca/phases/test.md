@@ -1,17 +1,17 @@
 # SPECA Test Phase
 
 ## Context Management
-Read `.claude/skills/speca/reference/context-rules.md` and follow strictly.
+Read `$SPECA_DIR/reference/context-rules.md` and follow strictly.
 
 You are generating executable Foundry test contracts for boundary condition verification and PoC reproduction of audit findings. This implements Strategy C from the SPECA paper, turning static findings into executable evidence.
 
 ## Prerequisites Check
 
-1. Run `node .claude/skills/speca/scripts/speca-cli.mjs config --action summary`. If missing, stop: "Run `/speca init` first."
+1. Run `node $SPECA_DIR/scripts/speca-cli.mjs config --action summary`. If missing, stop: "Run `/speca init` first."
 2. Extract `source_paths` and `language` (default: `"en"`).
-3. Run `node .claude/skills/speca/scripts/speca-cli.mjs query --file checklist --mode summary`. If missing, stop: "Run `/speca checklist` first."
-4. Run `node .claude/skills/speca/scripts/speca-cli.mjs query --file findings --mode summary`. If missing, warn: "No findings file. Continuing with checklist-only test generation." Set `has_findings = false`.
-5. Run `node .claude/skills/speca/scripts/speca-cli.mjs query --file mapping --mode get --id <req_id>` as needed for each requirement. If mapping is missing, stop: "Run `/speca map` first."
+3. Run `node $SPECA_DIR/scripts/speca-cli.mjs query --file checklist --mode summary`. If missing, stop: "Run `/speca checklist` first."
+4. Run `node $SPECA_DIR/scripts/speca-cli.mjs query --file findings --mode summary`. If missing, warn: "No findings file. Continuing with checklist-only test generation." Set `has_findings = false`.
+5. Run `node $SPECA_DIR/scripts/speca-cli.mjs query --file mapping --mode get --id <req_id>` as needed for each requirement. If mapping is missing, stop: "Run `/speca map` first."
 6. Load Solidity source files using Read tool with `offset`/`limit` matching the `line_range` from mapping entries — never read entire files.
 7. Check Foundry: `forge --version`. Set `foundry_available` accordingly.
 
@@ -19,10 +19,10 @@ You are generating executable Foundry test contracts for boundary condition veri
 
 Check for existing progress:
 ```bash
-node .claude/skills/speca/scripts/speca-cli.mjs config --action hash
+node $SPECA_DIR/scripts/speca-cli.mjs config --action hash
 ```
 ```bash
-node .claude/skills/speca/scripts/speca-cli.mjs progress --phase test --action should-resume
+node $SPECA_DIR/scripts/speca-cli.mjs progress --phase test --action should-resume
 ```
 
 - `"fresh"` → Start from beginning
@@ -37,11 +37,11 @@ node .claude/skills/speca/scripts/speca-cli.mjs progress --phase test --action s
 Get an overview first, then process in batches of 3:
 ```bash
 # Overview
-node .claude/skills/speca/scripts/speca-cli.mjs query --file checklist --mode summary
-node .claude/skills/speca/scripts/speca-cli.mjs query --file findings --mode summary
+node $SPECA_DIR/scripts/speca-cli.mjs query --file checklist --mode summary
+node $SPECA_DIR/scripts/speca-cli.mjs query --file findings --mode summary
 # Process in batches of 3
-node .claude/skills/speca/scripts/speca-cli.mjs query --file checklist --mode batch --index 0 --size 3
-node .claude/skills/speca/scripts/speca-cli.mjs query --file findings --mode batch --index 0 --size 3
+node $SPECA_DIR/scripts/speca-cli.mjs query --file checklist --mode batch --index 0 --size 3
+node $SPECA_DIR/scripts/speca-cli.mjs query --file findings --mode batch --index 0 --size 3
 ```
 
 ### Step 1a: Checklist-Derived Tests
@@ -71,7 +71,7 @@ Use mappings to find source file → construct relative import from `test/speca/
 
 For each requirement, fetch its mapping entry:
 ```bash
-node .claude/skills/speca/scripts/speca-cli.mjs query --file mapping --mode get --id <req_id>
+node $SPECA_DIR/scripts/speca-cli.mjs query --file mapping --mode get --id <req_id>
 ```
 
 Then use Read tool with `offset`/`limit` matching the mapping's `line_range` to load only the relevant code section.
@@ -129,7 +129,7 @@ contract Test_<sanitized_id> is Test {
 
 After each batch of 3 findings:
 ```bash
-echo '{"phase":"test","status":"in_progress","completed_batches":<N>,"total_batches":<total>,"config_hash":"<hash>","updated_at":"<ISO>"}' | node .claude/skills/speca/scripts/speca-cli.mjs progress --phase test --action save
+echo '{"phase":"test","status":"in_progress","completed_batches":<N>,"total_batches":<total>,"config_hash":"<hash>","updated_at":"<ISO>"}' | node $SPECA_DIR/scripts/speca-cli.mjs progress --phase test --action save
 ```
 
 ---
@@ -188,7 +188,7 @@ Print summary in configured `language`.
 
 Mark progress completed:
 ```bash
-echo '{"phase":"test","status":"completed","config_hash":"<hash>","updated_at":"<ISO>"}' | node .claude/skills/speca/scripts/speca-cli.mjs progress --phase test --action save
+echo '{"phase":"test","status":"completed","config_hash":"<hash>","updated_at":"<ISO>"}' | node $SPECA_DIR/scripts/speca-cli.mjs progress --phase test --action save
 ```
 
 ---
