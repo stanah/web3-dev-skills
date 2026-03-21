@@ -10,7 +10,7 @@
 
 **Spec:** `docs/superpowers/specs/2026-03-20-speca-context-guard-design.md`
 
-**Assumption:** All commands assume cwd is the repository root (`/Users/stanah/work/github.com/stanah/web3-dev-agent`).
+**Assumption:** All commands assume cwd is the repository root.
 
 ---
 
