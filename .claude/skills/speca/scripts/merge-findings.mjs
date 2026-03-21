@@ -6,8 +6,9 @@ const SEVERITY_ORDER = ['critical', 'high', 'medium', 'low', 'informational'];
 
 /**
  * Merge batch finding files into a single findings.json.
+ * total_checks_audited is auto-computed from the static checks in checklist.json.
  */
-export function mergeFindings(projectRoot, auditedAt, checklistVersion, totalChecksAudited) {
+export function mergeFindings(projectRoot, auditedAt, checklistVersion) {
   const batchDir = join(projectRoot, '.speca', 'progress', 'audit-batches');
   const files = readdirSync(batchDir).filter(f => f.startsWith('batch-') && f.endsWith('.json')).sort();
 
@@ -30,6 +31,10 @@ export function mergeFindings(projectRoot, auditedAt, checklistVersion, totalChe
     if (f.severity in bySeverity) bySeverity[f.severity]++;
   }
 
+  // Auto-compute total_checks_audited from static checks in checklist.json
+  const checklist = JSON.parse(readFileSync(join(projectRoot, '.speca', 'checklist.json'), 'utf-8'));
+  const totalChecksAudited = checklist.checklist.filter(c => c.check_type === 'static').length;
+
   const data = {
     audited_at: auditedAt,
     checklist_version: checklistVersion,
@@ -49,9 +54,8 @@ if (process.argv[1] === import.meta.filename) {
       'project-root': { type: 'string', default: '.' },
       'audited-at': { type: 'string' },
       'checklist-version': { type: 'string' },
-      'total-checks': { type: 'string' },
     }
   });
 
-  mergeFindings(values['project-root'], values['audited-at'], values['checklist-version'], parseInt(values['total-checks']));
+  mergeFindings(values['project-root'], values['audited-at'], values['checklist-version']);
 }
