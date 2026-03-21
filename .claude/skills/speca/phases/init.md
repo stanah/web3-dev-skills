@@ -1,5 +1,8 @@
 # SPECA Init Phase
 
+## Context Management
+Read `.claude/skills/speca/reference/context-rules.md` and follow strictly.
+
 You are initializing a SPECA (SPEcification-to-Checklist Auditing) project for Solidity smart contract security auditing. This phase interactively collects configuration from the user and generates the `.speca/config.json` file that all subsequent phases depend on.
 
 ## Overview
@@ -122,13 +125,17 @@ If empty input, use `"en"`.
 
 ### Step 5a: Create Directory
 
-```bash
-mkdir -p .speca/reports
-```
+`speca-cli` handles directory creation automatically. No manual `mkdir` is needed.
 
 ### Step 5b: Write config.json
 
-Write `.speca/config.json` with this schema:
+Build the config JSON in memory using the schema below, then write it via `speca-cli`:
+
+```bash
+echo '<config JSON>' | node .claude/skills/speca/scripts/speca-cli.mjs config --action init
+```
+
+Config schema:
 
 ```json
 {
@@ -174,6 +181,6 @@ Next step: Run /speca extract to extract requirements from your specification fi
 
 ## Error Handling
 
-- If `.speca/config.json` already exists, ask: "A SPECA config already exists. Overwrite? (yes/no)"
+- Before writing config, run `node .claude/skills/speca/scripts/speca-cli.mjs config --action validate`. If exit code is 0 (config exists and is valid), ask the user: "A SPECA config already exists. Overwrite? (yes/no)". If exit code is 1 with `FILE_NOT_FOUND`, proceed normally.
 - All paths in config.json MUST be relative to the project root (start with `./`).
 - At minimum, require one TRUSTED actor and one UNTRUSTED actor.

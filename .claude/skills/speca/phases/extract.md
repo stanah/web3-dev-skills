@@ -1,25 +1,32 @@
 # SPECA Extract Phase
 
+## Context Management
+Read `.claude/skills/speca/reference/context-rules.md` and follow strictly.
+
 You are extracting normative requirements from specification documents and producing `.speca/requirements.json`. This is Phase 1a of the SPECA pipeline. Accuracy is critical — missed requirements create gaps in the audit checklist.
 
 ## Prerequisites Check
 
-1. Read `.speca/config.json`. If missing, stop: "No SPECA config found. Run `/speca init` first."
-2. Extract `spec_paths`, `threat_model`, and `language` (default: `"en"`).
+1. Run:
+   ```bash
+   node .claude/skills/speca/scripts/speca-cli.mjs config --action summary
+   ```
+   If missing, stop: "No SPECA config found. Run `/speca init` first."
+2. Parse `spec_paths`, `language` (default: `"en"`) from the JSON output.
 3. Validate each file in `spec_paths` exists. Report missing files and stop if any are missing.
 
 ### Checkpoint Support
 
 For projects with many spec files, use checkpoint-based processing:
 
-1. Run: `node .claude/skills/speca/scripts/lib/config.mjs` is available as a library. Use the config hash for change detection:
+1. Get the config hash for change detection:
    ```bash
-   node -e "import {getConfigHash} from '.claude/skills/speca/scripts/lib/config.mjs'; console.log(getConfigHash('.'))"
+   node .claude/skills/speca/scripts/speca-cli.mjs config --action hash
    ```
 
 2. Check for existing progress:
    ```bash
-   node -e "import {loadProgress, shouldResume} from '.claude/skills/speca/scripts/lib/progress.mjs'; const p = loadProgress('.', 'extract'); console.log(JSON.stringify({progress: p, action: shouldResume(p, '<config_hash>')}))"
+   node .claude/skills/speca/scripts/speca-cli.mjs progress --phase extract --action should-resume
    ```
 
 3. If `action` is `"resume"`, continue from the last completed spec file.
@@ -63,7 +70,7 @@ For each requirement, determine:
 ### Step 1d: Save Progress After Each File
 After processing each spec file, save progress:
 ```bash
-node -e "import {saveProgress} from '.claude/skills/speca/scripts/lib/progress.mjs'; saveProgress('.', 'extract', {phase:'extract', status:'in_progress', completed_files: <N>, total_files: <total>, config_hash:'<hash>', updated_at: new Date().toISOString()})"
+echo '{"phase":"extract","status":"in_progress","updated_at":"<ISO>"}' | node .claude/skills/speca/scripts/speca-cli.mjs progress --phase extract --action save
 ```
 
 ---
@@ -160,7 +167,7 @@ Next step: Run /speca map to map requirements to source code.
 
 Mark progress as completed:
 ```bash
-node -e "import {saveProgress} from '.claude/skills/speca/scripts/lib/progress.mjs'; saveProgress('.', 'extract', {phase:'extract', status:'completed', config_hash:'<hash>', updated_at: new Date().toISOString()})"
+echo '{"phase":"extract","status":"completed","updated_at":"<ISO>"}' | node .claude/skills/speca/scripts/speca-cli.mjs progress --phase extract --action save
 ```
 
 ---

@@ -1,17 +1,27 @@
 # SPECA Report Phase
 
+## Context Management
+Read `.claude/skills/speca/reference/context-rules.md` and follow strictly.
+
 You are generating the final audit report from SPECA pipeline artifacts. This produces two output files: a human-readable Markdown report and a machine-readable SARIF v2.1.0 file. This is the final step of the SPECA pipeline.
 
 ## Prerequisites Check
 
-1. Read `.speca/findings.json`. If missing, stop: "Run `/speca audit` first."
-2. Extract: `audited_at`, `checklist_version`, `total_checks_audited`, `total_findings`, `findings_by_severity`, `findings` array.
-3. Read `.speca/checklist.json`. If missing, warn. Set `has_checklist = false`.
-4. Read `.speca/requirements.json`. If missing, warn. Set `has_requirements = false`.
-5. Read `.speca/mapping.json`. If missing, warn. Set `has_mapping = false`.
-6. Read `.speca/config.json`. If missing, warn. Set `has_config = false`.
-7. If config exists, extract `threat_model`, `language` (default: `"en"`), and determine `targetName` from project directory.
-8. Read `.speca/test-results.json`. If missing, set `has_test_results = false`.
+1. Query findings summary to check existence and extract metadata:
+   ```bash
+   node .claude/skills/speca/scripts/speca-cli.mjs query --file findings --mode summary
+   ```
+   If findings are missing, stop: "Run `/speca audit` first."
+   Extract: `audited_at`, `checklist_version`, `total_checks_audited`, `total_findings`, `findings_by_severity`.
+
+2. Query config summary to extract target and language settings:
+   ```bash
+   node .claude/skills/speca/scripts/speca-cli.mjs config --action summary
+   ```
+   If config is missing, warn. Set `has_config = false`.
+   If config exists, extract `threat_model`, `language` (default: `"en"`), and determine `targetName` from project directory.
+
+3. Other `.speca/` files (checklist, requirements, mapping, test-results) are read internally by the report subcommand — no manual reads needed.
 
 ---
 
@@ -22,18 +32,16 @@ You are generating the final audit report from SPECA pipeline artifacts. This pr
 mkdir -p .speca/reports
 ```
 
-### Step 1b: Generate Report Skeleton with Script
+### Step 1b: Generate Report with speca-cli
 
-Use the report skeleton generator for all tables and statistics:
+Use the report subcommand to generate the full Markdown report skeleton:
 
 ```bash
-node .claude/skills/speca/scripts/generate-report-skeleton.mjs \
-  --config .speca/config.json \
-  --findings .speca/findings.json \
-  --checklist .speca/checklist.json \
+node .claude/skills/speca/scripts/speca-cli.mjs report \
+  --format md \
   --output .speca/reports/YYYY-MM-DD-report.md \
   --date "YYYY-MM-DD" \
-  --target-name "<targetName>"
+  --target-name "<name>"
 ```
 
 This generates:
@@ -45,6 +53,8 @@ This generates:
 - Methodology section
 
 ### Step 1c: Localize and Polish (LLM Task)
+
+**Note:** Reading back `.speca/reports/*.md` for polishing is ALLOWED per context-rules.md.
 
 After the skeleton is generated, read the skeleton file and:
 
@@ -59,9 +69,8 @@ After the skeleton is generated, read the skeleton file and:
 
 ### Step 1d: Compute Coverage Statistics
 
-If `has_checklist`:
 ```bash
-node .claude/skills/speca/scripts/compute-stats.mjs \
+node .claude/skills/speca/scripts/speca-cli.mjs stats \
   --findings .speca/findings.json \
   --checklist .speca/checklist.json \
   --format json
@@ -96,12 +105,11 @@ If `has_test_results`:
 
 ## Phase 2: SARIF v2.1.0 Generation (Fully Script-Driven)
 
-The SARIF generation is entirely handled by the Node.js script:
+The SARIF generation is entirely handled by the CLI:
 
 ```bash
-node .claude/skills/speca/scripts/generate-sarif.mjs \
-  --findings .speca/findings.json \
-  --checklist .speca/checklist.json \
+node .claude/skills/speca/scripts/speca-cli.mjs report \
+  --format sarif \
   --output .speca/reports/YYYY-MM-DD-report.sarif
 ```
 

@@ -2,24 +2,27 @@
 
 You are performing a static security audit of Solidity smart contract source code against the specification-derived checklist. This is the core value-producing step. Your goal is to identify real vulnerabilities with concrete code evidence while minimizing false positives through threat model filtering.
 
+## Context Management
+Read `.claude/skills/speca/reference/context-rules.md` and follow strictly.
+
 ## Prerequisites Check
 
-1. Read `.speca/config.json`. If missing, stop: "Run `/speca init` first."
+1. Run `node .claude/skills/speca/scripts/speca-cli.mjs config --action summary`. If missing, stop: "Run `/speca init` first."
 2. Extract `threat_model` and `language` (default: `"en"`).
-3. Read `.speca/checklist.json`. If missing, stop: "Run `/speca checklist` first."
-4. Read `.speca/mapping.json`. If missing, stop: "Run `/speca map` first."
-5. Load all Solidity source files listed in mapping.json's `source_files`.
+3. Run `node .claude/skills/speca/scripts/speca-cli.mjs filter --input .speca/checklist.json --type static --batch-index 0 --batch-size 1` to verify checklist exists. If missing, stop: "Run `/speca checklist` first."
+4. Run `node .claude/skills/speca/scripts/speca-cli.mjs query --file mapping --mode get --id <req_id>` to verify mapping exists. If missing, stop: "Run `/speca map` first."
+5. Load Solidity source files listed in mapping data's `source_files` using the Read tool with `offset`/`limit` parameters matching `line_range` from mapping data.
 
 ### Checkpoint Support
 
 Determine config hash and check for existing progress:
 
 ```bash
-node -e "import {getConfigHash} from '.claude/skills/speca/scripts/lib/config.mjs'; console.log(getConfigHash('.'))"
+node .claude/skills/speca/scripts/speca-cli.mjs config --action hash
 ```
 
 ```bash
-node -e "import {loadProgress, shouldResume} from '.claude/skills/speca/scripts/lib/progress.mjs'; const p = loadProgress('.', 'audit'); console.log(JSON.stringify({progress: p, action: shouldResume(p, '<config_hash>')}))"
+node .claude/skills/speca/scripts/speca-cli.mjs progress --phase audit --action should-resume
 ```
 
 - `"fresh"` → Start from beginning
@@ -35,10 +38,10 @@ If `$ARGUMENTS` contains `--resume`, force resume behavior.
 
 ### Step 1a: Filter Static Checks
 
-Use `filter-checklist.mjs` to get static checks sorted by priority:
+Use `speca-cli.mjs` to get static checks sorted by priority:
 
 ```bash
-node .claude/skills/speca/scripts/filter-checklist.mjs \
+node .claude/skills/speca/scripts/speca-cli.mjs filter \
   --input .speca/checklist.json \
   --type static \
   --batch-index 0 --batch-size 5
@@ -57,8 +60,8 @@ This returns the first batch of 5 static checklist items with metadata:
 For a fresh start, initialize the findings file:
 
 ```bash
-node .claude/skills/speca/scripts/append-finding.mjs \
-  --project-root . --init \
+node .claude/skills/speca/scripts/speca-cli.mjs record \
+  --init \
   --audited-at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
   --checklist-version "<generated_at from checklist.json>"
 ```
@@ -71,7 +74,7 @@ mkdir -p .speca/progress/audit-batches
 ### Step 1c: Initialize Progress
 
 ```bash
-node -e "import {saveProgress} from '.claude/skills/speca/scripts/lib/progress.mjs'; saveProgress('.', 'audit', {phase:'audit', status:'in_progress', started_at: new Date().toISOString(), updated_at: new Date().toISOString(), total_items: <totalFiltered>, completed_items: 0, current_batch: 0, batch_size: 5, config_hash:'<hash>'})"
+echo '{"phase":"audit","status":"in_progress","started_at":"<ISO timestamp>","updated_at":"<ISO timestamp>","total_items":<totalFiltered>,"completed_items":0,"current_batch":0,"batch_size":5,"config_hash":"<hash>"}' | node .claude/skills/speca/scripts/speca-cli.mjs progress --phase audit --action save
 ```
 
 ---
@@ -83,7 +86,7 @@ For each batch of 5 checklist items:
 ### Step 2a: Load Batch
 
 ```bash
-node .claude/skills/speca/scripts/filter-checklist.mjs \
+node .claude/skills/speca/scripts/speca-cli.mjs filter \
   --input .speca/checklist.json \
   --type static \
   --mapping .speca/mapping.json \
@@ -98,8 +101,9 @@ For each checklist item in the batch:
 
 #### Phase 2b-i: Presence Check
 1. Find code at mapped location via `requirement_id` → `mappings` → `locations`.
-2. If unmapped: create finding "Missing implementation for <requirement_id>".
-3. If code exists: proceed.
+2. Use the Read tool with `offset` and `limit` parameters matching the `line_range` from the mapping data to read only the relevant portion of each source file.
+3. If unmapped: create finding "Missing implementation for <requirement_id>".
+4. If code exists: proceed.
 
 #### Phase 2b-ii: Correctness Check
 1. Does code correctly implement the requirement?
@@ -151,14 +155,13 @@ Each finding MUST include:
 Save this batch's findings to a batch file:
 
 ```bash
-# Write batch findings array to file
-echo '<JSON array of findings>' > .speca/progress/audit-batches/batch-<N>.json
+echo '<JSON array of findings>' | node .claude/skills/speca/scripts/speca-cli.mjs record --write-batch --batch-index <N>
 ```
 
 ### Step 2f: Update Progress
 
 ```bash
-node -e "import {saveProgress} from '.claude/skills/speca/scripts/lib/progress.mjs'; saveProgress('.', 'audit', {phase:'audit', status:'in_progress', started_at:'<original>', updated_at: new Date().toISOString(), total_items: <total>, completed_items: <completed>, current_batch: <next_batch>, batch_size: 5, config_hash:'<hash>'})"
+echo '{"phase":"audit","status":"in_progress","started_at":"<original>","updated_at":"<ISO timestamp>","total_items":<total>,"completed_items":<completed>,"current_batch":<next_batch>,"batch_size":5,"config_hash":"<hash>"}' | node .claude/skills/speca/scripts/speca-cli.mjs progress --phase audit --action save
 ```
 
 ### Step 2g: Repeat
@@ -172,11 +175,9 @@ Continue to next batch until all batches processed.
 After all batches complete, merge findings:
 
 ```bash
-node .claude/skills/speca/scripts/merge-findings.mjs \
-  --project-root . \
+node .claude/skills/speca/scripts/speca-cli.mjs merge \
   --audited-at "<timestamp>" \
-  --checklist-version "<checklist generated_at>" \
-  --total-checks <static_count>
+  --checklist-version "<checklist generated_at>"
 ```
 
 This reads all `batch-*.json` files, deduplicates, sorts by severity, and writes `.speca/findings.json`.
@@ -186,7 +187,7 @@ This reads all `batch-*.json` files, deduplicates, sorts by severity, and writes
 ## Phase 4: Compute Statistics
 
 ```bash
-node .claude/skills/speca/scripts/compute-stats.mjs \
+node .claude/skills/speca/scripts/speca-cli.mjs stats \
   --findings .speca/findings.json \
   --checklist .speca/checklist.json \
   --format text
@@ -229,7 +230,7 @@ Next steps:
 
 Mark progress completed:
 ```bash
-node -e "import {saveProgress} from '.claude/skills/speca/scripts/lib/progress.mjs'; saveProgress('.', 'audit', {phase:'audit', status:'completed', config_hash:'<hash>', updated_at: new Date().toISOString()})"
+echo '{"phase":"audit","status":"completed","config_hash":"<hash>","updated_at":"<ISO timestamp>"}' | node .claude/skills/speca/scripts/speca-cli.mjs progress --phase audit --action save
 ```
 
 ---

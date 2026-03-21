@@ -1,31 +1,48 @@
 # SPECA Test Phase
 
+## Context Management
+Read `.claude/skills/speca/reference/context-rules.md` and follow strictly.
+
 You are generating executable Foundry test contracts for boundary condition verification and PoC reproduction of audit findings. This implements Strategy C from the SPECA paper, turning static findings into executable evidence.
 
 ## Prerequisites Check
 
-1. Read `.speca/checklist.json`. If missing, stop: "Run `/speca checklist` first."
-2. Read `.speca/findings.json`. If missing, warn: "No findings file. Continuing with checklist-only test generation." Set `has_findings = false`.
-3. Read `.speca/mapping.json`. If missing, stop: "Run `/speca map` first."
-4. Read `.speca/config.json`. If missing, stop: "Run `/speca init` first."
-5. Extract `source_paths` and `language` (default: `"en"`).
-6. Load all Solidity source files from mapping.json's `source_files`.
+1. Run `node .claude/skills/speca/scripts/speca-cli.mjs config --action summary`. If missing, stop: "Run `/speca init` first."
+2. Extract `source_paths` and `language` (default: `"en"`).
+3. Run `node .claude/skills/speca/scripts/speca-cli.mjs query --file checklist --mode summary`. If missing, stop: "Run `/speca checklist` first."
+4. Run `node .claude/skills/speca/scripts/speca-cli.mjs query --file findings --mode summary`. If missing, warn: "No findings file. Continuing with checklist-only test generation." Set `has_findings = false`.
+5. Run `node .claude/skills/speca/scripts/speca-cli.mjs query --file mapping --mode get --id <req_id>` as needed for each requirement. If mapping is missing, stop: "Run `/speca map` first."
+6. Load Solidity source files using Read tool with `offset`/`limit` matching the `line_range` from mapping entries — never read entire files.
 7. Check Foundry: `forge --version`. Set `foundry_available` accordingly.
 
 ### Checkpoint Support
 
+Check for existing progress:
 ```bash
-node -e "import {getConfigHash} from '.claude/skills/speca/scripts/lib/config.mjs'; console.log(getConfigHash('.'))"
+node .claude/skills/speca/scripts/speca-cli.mjs config --action hash
 ```
 ```bash
-node -e "import {loadProgress, shouldResume} from '.claude/skills/speca/scripts/lib/progress.mjs'; const p = loadProgress('.', 'test'); console.log(JSON.stringify({progress: p, action: shouldResume(p, '<config_hash>')}))"
+node .claude/skills/speca/scripts/speca-cli.mjs progress --phase test --action should-resume
 ```
+
+- `"fresh"` → Start from beginning
+- `"resume"` → Continue from last completed batch
+- `"restart"` → Config changed, start over
+- `"completed"` → Inform user, ask if re-run desired
 
 ---
 
 ## Phase 1: Identify Testable Items
 
-Process findings in batches of 3.
+Get an overview first, then process in batches of 3:
+```bash
+# Overview
+node .claude/skills/speca/scripts/speca-cli.mjs query --file checklist --mode summary
+node .claude/skills/speca/scripts/speca-cli.mjs query --file findings --mode summary
+# Process in batches of 3
+node .claude/skills/speca/scripts/speca-cli.mjs query --file checklist --mode batch --index 0 --size 3
+node .claude/skills/speca/scripts/speca-cli.mjs query --file findings --mode batch --index 0 --size 3
+```
 
 ### Step 1a: Checklist-Derived Tests
 Select items where `check_type` is `"dynamic"` or has corresponding finding.
@@ -51,6 +68,13 @@ mkdir -p test/speca
 
 ### Step 2b: Determine Import Paths
 Use mappings to find source file → construct relative import from `test/speca/`.
+
+For each requirement, fetch its mapping entry:
+```bash
+node .claude/skills/speca/scripts/speca-cli.mjs query --file mapping --mode get --id <req_id>
+```
+
+Then use Read tool with `offset`/`limit` matching the mapping's `line_range` to load only the relevant code section.
 
 ### Step 2c: Generate Test Contracts
 
@@ -105,7 +129,7 @@ contract Test_<sanitized_id> is Test {
 
 After each batch of 3 findings:
 ```bash
-node -e "import {saveProgress} from '.claude/skills/speca/scripts/lib/progress.mjs'; saveProgress('.', 'test', {phase:'test', status:'in_progress', completed_batches: <N>, total_batches: <total>, config_hash:'<hash>', updated_at: new Date().toISOString()})"
+echo '{"phase":"test","status":"in_progress","completed_batches":<N>,"total_batches":<total>,"config_hash":"<hash>","updated_at":"<ISO>"}' | node .claude/skills/speca/scripts/speca-cli.mjs progress --phase test --action save
 ```
 
 ---
@@ -162,7 +186,10 @@ Write `.speca/test-results.json`:
 
 Print summary in configured `language`.
 
-Mark progress completed.
+Mark progress completed:
+```bash
+echo '{"phase":"test","status":"completed","config_hash":"<hash>","updated_at":"<ISO>"}' | node .claude/skills/speca/scripts/speca-cli.mjs progress --phase test --action save
+```
 
 ---
 

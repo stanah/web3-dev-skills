@@ -1,22 +1,25 @@
 # SPECA Checklist Phase
 
+## Context Management
+Read `.claude/skills/speca/reference/context-rules.md` and follow strictly.
+
 You are generating a property-based security checklist from extracted requirements, code mappings, and a vulnerability pattern database. This produces `.speca/checklist.json`. This is the keystone step: the checklist determines what gets audited.
 
 ## Prerequisites Check
 
-1. Read `.speca/config.json`. If missing, stop: "Run `/speca init` first."
+1. Run `node .claude/skills/speca/scripts/speca-cli.mjs config --action summary`. If missing, stop: "Run `/speca init` first."
 2. Extract `threat_model` (actors, boundaries, assumptions) and `language` (default: `"en"`).
-3. Read `.speca/requirements.json`. If missing, stop: "Run `/speca extract` first."
-4. Read `.speca/mapping.json`. If missing, stop: "Run `/speca map` first."
+3. Run `node .claude/skills/speca/scripts/speca-cli.mjs query --file requirements --mode summary`. If missing, stop: "Run `/speca extract` first."
+4. Run `node .claude/skills/speca/scripts/speca-cli.mjs query --file mapping --mode summary`. If missing, stop: "Run `/speca map` first."
 5. Parse both JSON files.
 
 ### Checkpoint Support
 
 ```bash
-node -e "import {getConfigHash} from '.claude/skills/speca/scripts/lib/config.mjs'; console.log(getConfigHash('.'))"
+node .claude/skills/speca/scripts/speca-cli.mjs config --action hash
 ```
 ```bash
-node -e "import {loadProgress, shouldResume} from '.claude/skills/speca/scripts/lib/progress.mjs'; const p = loadProgress('.', 'checklist'); console.log(JSON.stringify({progress: p, action: shouldResume(p, '<config_hash>')}))"
+node .claude/skills/speca/scripts/speca-cli.mjs progress --phase checklist --action should-resume
 ```
 
 ### Load Vulnerability Pattern Database
@@ -32,7 +35,11 @@ This contains 10 categories with 26 patterns. Use these patterns when matching a
 
 ## Phase 1: Derive Testable Properties from Mapped Requirements
 
-Process mappings in batches (batch size: 10 mappings). For each mapped requirement (`status: "mapped"`):
+Process mappings in batches (batch size: 10 mappings):
+```bash
+node .claude/skills/speca/scripts/speca-cli.mjs query --file mapping --mode batch --index 0 --size 10
+```
+For each mapped requirement (`status: "mapped"`):
 
 ### Step 1a: Positive Case Properties
 Derive at least one property: correct behavior MUST occur when preconditions satisfied.
@@ -49,7 +56,7 @@ Format: `"<function>() <expected behavior> when <edge condition>"`
 ### Save Batch Progress
 After each batch of mappings:
 ```bash
-node -e "import {saveProgress} from '.claude/skills/speca/scripts/lib/progress.mjs'; saveProgress('.', 'checklist', {phase:'checklist', status:'in_progress', completed_batches: <N>, total_batches: <total>, config_hash:'<hash>', updated_at: new Date().toISOString()})"
+echo '{"phase":"checklist","status":"in_progress","completed_batches":<N>,"total_batches":<total>,"config_hash":"<hash>","updated_at":"<ISO>"}' | node .claude/skills/speca/scripts/speca-cli.mjs progress --phase checklist --action save
 ```
 
 ---
