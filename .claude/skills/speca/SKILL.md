@@ -48,24 +48,29 @@ Parse `$ARGUMENTS` to determine the phase. The first word after `/speca` is the 
 
 4. Pass any remaining arguments after the phase name to the phase (e.g., `/speca audit --resume` passes `--resume` to the audit phase).
 
-## Helper Scripts
+## CLI
 
-All Node.js helper scripts are located at `.claude/skills/speca/scripts/`. These handle deterministic data processing with zero external dependencies:
+All data access and operations go through the unified CLI:
 
-| Script | Purpose |
-|--------|---------|
-| `lib/config.mjs` | Read and parse `.speca/config.json` |
-| `lib/progress.mjs` | Checkpoint management for session resume |
-| `filter-checklist.mjs` | Filter and batch checklist items |
-| `compute-stats.mjs` | Compute findings/checklist statistics |
-| `append-finding.mjs` | Initialize and append to findings.json |
-| `merge-findings.mjs` | Merge batch finding files |
-| `generate-sarif.mjs` | Generate SARIF v2.1.0 report |
-| `generate-report-skeleton.mjs` | Generate Markdown report skeleton |
+```
+node .claude/skills/speca/scripts/speca-cli.mjs <subcommand> [options]
+```
+
+| Subcommand | Purpose |
+|------------|---------|
+| `query` | Read intermediate files (summary/batch/get) |
+| `filter` | Filter and batch checklist items |
+| `stats` | Compute findings/checklist statistics |
+| `config` | Read/write/validate `.speca/config.json` |
+| `record` | Initialize, append, batch-write findings |
+| `merge` | Merge batch finding files |
+| `report` | Generate Markdown and/or SARIF reports |
+| `progress` | Checkpoint management for session resume |
 
 ## Reference Data
 
 - `.claude/skills/speca/reference/vulnerability-patterns.md` — Solidity vulnerability pattern database for checklist generation
+- `.claude/skills/speca/reference/context-rules.md` — Context management rules (loaded by all phases)
 
 ## No Arguments — Help
 
