@@ -45,9 +45,9 @@ describe('querySummary', () => {
       mapped_at: '2026-03-20T00:00:00Z',
       source_files: ['./contracts/Vault.sol'],
       mappings: [
-        { requirement_id: 'SPEC-AUTH-001', mapped: true, confidence: 0.95 },
-        { requirement_id: 'SPEC-VAL-001', mapped: true, confidence: 0.80 },
-        { requirement_id: 'SPEC-VAL-002', mapped: false, confidence: 0.55 },
+        { requirement_id: 'SPEC-AUTH-001', status: 'mapped', locations: [{ confidence: 0.95 }] },
+        { requirement_id: 'SPEC-VAL-001', status: 'mapped', locations: [{ confidence: 0.80 }] },
+        { requirement_id: 'SPEC-VAL-002', status: 'unmapped', locations: [{ confidence: 0.55 }] },
       ]
     };
     const result = querySummary('mapping', mockMapping);

@@ -67,13 +67,15 @@ export function querySummary(fileType, data) {
 
     case 'mapping': {
       const mappings = data.mappings ?? [];
-      const mapped = mappings.filter(m => m.mapped).length;
+      const mapped = mappings.filter(m => m.status === 'mapped').length;
       const dist = { high_0_9_1_0: 0, medium_0_7_0_89: 0, low_0_5_0_69: 0 };
       for (const m of mappings) {
-        const c = m.confidence ?? 0;
-        if (c >= 0.9) dist.high_0_9_1_0++;
-        else if (c >= 0.7) dist.medium_0_7_0_89++;
-        else if (c >= 0.5) dist.low_0_5_0_69++;
+        for (const loc of (m.locations ?? [])) {
+          const c = loc.confidence ?? 0;
+          if (c >= 0.9) dist.high_0_9_1_0++;
+          else if (c >= 0.7) dist.medium_0_7_0_89++;
+          else if (c >= 0.5) dist.low_0_5_0_69++;
+        }
       }
       return {
         file: 'mapping',
