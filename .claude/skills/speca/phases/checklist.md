@@ -29,7 +29,7 @@ Read the vulnerability pattern database:
 Read .claude/skills/speca/reference/vulnerability-patterns.md
 ```
 
-This contains 10 categories with 26 patterns. Use these patterns when matching against mapped code.
+This contains 16 categories with 45 patterns. Use these patterns when matching against mapped code.
 
 ---
 
@@ -117,7 +117,7 @@ For each `status: "unmapped"` mapping:
 ### Step 5a: Check IDs
 Pattern: `CHK-<CATEGORY>-<PATTERN_NUM>-<SUFFIX>`
 
-Categories: AUTH, VAL, STATE, EVT, ERR, DATA, LCY, GEN, REENT, ACCESS, INT, LOGIC, EXTCALL, GAS, ORACLE, ERC, UPGRADE, CRYPTO
+Categories: AUTH, VAL, STATE, EVT, ERR, DATA, LCY, GEN, REENT, ACCESS, INT, LOGIC, EXTCALL, GAS, ORACLE, ERC, UPGRADE, CRYPTO, MEV, FLASH, TOKEN, VAULT, SIG, GOV
 
 ### Step 5b: Priority
 Combine requirement `severity_hint` with pattern severity:
@@ -143,7 +143,7 @@ Write `.speca/checklist.json`:
 {
   "generated_at": "<ISO 8601>",
   "total_checks": <N>,
-  "pattern_db_version": "1.0",
+  "pattern_db_version": "2.1",
   "summary": {
     "by_priority": { "critical": <N>, "high": <N>, "medium": <N>, "low": <N> },
     "by_check_type": { "static": <N>, "dynamic": <N> },
