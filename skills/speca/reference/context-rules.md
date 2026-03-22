@@ -64,3 +64,4 @@ These files may be read directly with the Read tool:
 - Phase instruction files: `$SPECA_DIR/phases/*.md`
 - Reference files: `$SPECA_DIR/reference/*.md`
 - Generated reports: `.speca/reports/*.md` (for post-generation polishing only)
+- Scaling guide: `$SPECA_DIR/reference/scaling-guide.md`

@@ -5,6 +5,9 @@ You are performing a static security audit of Solidity smart contract source cod
 ## Context Management
 Read `$SPECA_DIR/reference/context-rules.md` and follow strictly.
 
+### Scaling and Human Review
+Read `$SPECA_DIR/reference/scaling-guide.md` for human review protocol. After this phase completes, present each finding to the user for validation (~10 min per finding). Human verification is required for all findings before proceeding to the test phase. For large codebases (> 30 contracts or > 3000 LOC), consider subagent delegation for batch processing.
+
 ## Prerequisites Check
 
 1. Run `node $SPECA_DIR/scripts/speca-cli.mjs config --action summary`. If missing, stop: "Run `/speca init` first."

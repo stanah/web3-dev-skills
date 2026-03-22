@@ -96,6 +96,7 @@ node $SPECA_DIR/scripts/speca-cli.mjs <subcommand> [options]
 
 - `$SPECA_DIR/reference/vulnerability-patterns.md` — Solidity vulnerability pattern database for checklist generation
 - `$SPECA_DIR/reference/context-rules.md` — Context management rules (loaded by all phases)
+- `$SPECA_DIR/reference/scaling-guide.md` — Human review protocol, session splitting, and subagent delegation
 
 ## No Arguments — Help
 
