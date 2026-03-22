@@ -1,32 +1,35 @@
 # SPECA Checklist Phase
 
 ## Context Management
-Read `.claude/skills/speca/reference/context-rules.md` and follow strictly.
+Read `$SPECA_DIR/reference/context-rules.md` and follow strictly.
+
+### Scaling and Human Review
+Read `$SPECA_DIR/reference/scaling-guide.md` for human review protocol. After this phase completes, present checklist summary to the user (item count, severity distribution, threat model alignment) and wait for confirmation before proceeding to the audit phase.
 
 You are generating a property-based security checklist from extracted requirements, code mappings, and a vulnerability pattern database. This produces `.speca/checklist.json`. This is the keystone step: the checklist determines what gets audited.
 
 ## Prerequisites Check
 
-1. Run `node .claude/skills/speca/scripts/speca-cli.mjs config --action summary`. If missing, stop: "Run `/speca init` first."
+1. Run `node $SPECA_DIR/scripts/speca-cli.mjs config --action summary`. If missing, stop: "Run `/speca init` first."
 2. Extract `threat_model` (actors, boundaries, assumptions) and `language` (default: `"en"`).
-3. Run `node .claude/skills/speca/scripts/speca-cli.mjs query --file requirements --mode summary`. If missing, stop: "Run `/speca extract` first."
-4. Run `node .claude/skills/speca/scripts/speca-cli.mjs query --file mapping --mode summary`. If missing, stop: "Run `/speca map` first."
+3. Run `node $SPECA_DIR/scripts/speca-cli.mjs query --file requirements --mode summary`. If missing, stop: "Run `/speca extract` first."
+4. Run `node $SPECA_DIR/scripts/speca-cli.mjs query --file mapping --mode summary`. If missing, stop: "Run `/speca map` first."
 5. Parse both JSON files.
 
 ### Checkpoint Support
 
 ```bash
-node .claude/skills/speca/scripts/speca-cli.mjs config --action hash
+node $SPECA_DIR/scripts/speca-cli.mjs config --action hash
 ```
 ```bash
-node .claude/skills/speca/scripts/speca-cli.mjs progress --phase checklist --action should-resume
+node $SPECA_DIR/scripts/speca-cli.mjs progress --phase checklist --action should-resume
 ```
 
 ### Load Vulnerability Pattern Database
 
 Read the vulnerability pattern database:
 ```
-Read .claude/skills/speca/reference/vulnerability-patterns.md
+Read $SPECA_DIR/reference/vulnerability-patterns.md
 ```
 
 This contains 16 categories with 45 patterns. Use these patterns when matching against mapped code.
@@ -37,7 +40,7 @@ This contains 16 categories with 45 patterns. Use these patterns when matching a
 
 Process mappings in batches (batch size: 10 mappings):
 ```bash
-node .claude/skills/speca/scripts/speca-cli.mjs query --file mapping --mode batch --index 0 --size 10
+node $SPECA_DIR/scripts/speca-cli.mjs query --file mapping --mode batch --index 0 --size 10
 ```
 For each mapped requirement (`status: "mapped"`):
 
@@ -56,7 +59,7 @@ Format: `"<function>() <expected behavior> when <edge condition>"`
 ### Save Batch Progress
 After each batch of mappings:
 ```bash
-echo '{"phase":"checklist","status":"in_progress","completed_batches":<N>,"total_batches":<total>,"config_hash":"<hash>","updated_at":"<ISO>"}' | node .claude/skills/speca/scripts/speca-cli.mjs progress --phase checklist --action save
+echo '{"phase":"checklist","status":"in_progress","completed_batches":<N>,"total_batches":<total>,"config_hash":"<hash>","updated_at":"<ISO>"}' | node $SPECA_DIR/scripts/speca-cli.mjs progress --phase checklist --action save
 ```
 
 ---

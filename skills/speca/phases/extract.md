@@ -1,7 +1,10 @@
 # SPECA Extract Phase
 
 ## Context Management
-Read `.claude/skills/speca/reference/context-rules.md` and follow strictly.
+Read `$SPECA_DIR/reference/context-rules.md` and follow strictly.
+
+### Scaling and Human Review
+Read `$SPECA_DIR/reference/scaling-guide.md` for human review protocol. After this phase completes, present a summary of extracted requirements to the user and wait for confirmation before proceeding to the map phase.
 
 You are extracting normative requirements from specification documents and producing `.speca/requirements.json`. This is Phase 1a of the SPECA pipeline. Accuracy is critical — missed requirements create gaps in the audit checklist.
 
@@ -9,7 +12,7 @@ You are extracting normative requirements from specification documents and produ
 
 1. Run:
    ```bash
-   node .claude/skills/speca/scripts/speca-cli.mjs config --action summary
+   node $SPECA_DIR/scripts/speca-cli.mjs config --action summary
    ```
    If missing, stop: "No SPECA config found. Run `/speca init` first."
 2. Parse `spec_paths`, `language` (default: `"en"`) from the JSON output.
@@ -21,12 +24,12 @@ For projects with many spec files, use checkpoint-based processing:
 
 1. Get the config hash for change detection:
    ```bash
-   node .claude/skills/speca/scripts/speca-cli.mjs config --action hash
+   node $SPECA_DIR/scripts/speca-cli.mjs config --action hash
    ```
 
 2. Check for existing progress:
    ```bash
-   node .claude/skills/speca/scripts/speca-cli.mjs progress --phase extract --action should-resume
+   node $SPECA_DIR/scripts/speca-cli.mjs progress --phase extract --action should-resume
    ```
 
 3. If `action` is `"resume"`, continue from the last completed spec file.
@@ -70,7 +73,7 @@ For each requirement, determine:
 ### Step 1d: Save Progress After Each File
 After processing each spec file, save progress:
 ```bash
-echo '{"phase":"extract","status":"in_progress","updated_at":"<ISO>"}' | node .claude/skills/speca/scripts/speca-cli.mjs progress --phase extract --action save
+echo '{"phase":"extract","status":"in_progress","updated_at":"<ISO>"}' | node $SPECA_DIR/scripts/speca-cli.mjs progress --phase extract --action save
 ```
 
 ---
@@ -167,7 +170,7 @@ Next step: Run /speca map to map requirements to source code.
 
 Mark progress as completed:
 ```bash
-echo '{"phase":"extract","status":"completed","updated_at":"<ISO>"}' | node .claude/skills/speca/scripts/speca-cli.mjs progress --phase extract --action save
+echo '{"phase":"extract","status":"completed","updated_at":"<ISO>"}' | node $SPECA_DIR/scripts/speca-cli.mjs progress --phase extract --action save
 ```
 
 ---

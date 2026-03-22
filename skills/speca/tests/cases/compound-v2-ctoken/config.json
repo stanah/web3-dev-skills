@@ -1,0 +1,30 @@
+{
+  "version": "1.0",
+  "language": "en",
+  "spec_paths": ["./docs/spec.md"],
+  "source_paths": ["./contracts/"],
+  "threat_model": {
+    "actors": {
+      "admin": "TRUSTED",
+      "oracle": "SEMI_TRUSTED",
+      "supplier": "UNTRUSTED",
+      "borrower": "UNTRUSTED",
+      "liquidator": "UNTRUSTED"
+    },
+    "boundaries": [
+      "admin -> _setPendingAdmin, _acceptAdmin, _setComptroller, _setReserveFactor, _setInterestRateModel, _reduceReserves",
+      "supplier -> mint, redeem, redeemUnderlying",
+      "borrower -> borrow, repayBorrow, repayBorrowBehalf",
+      "liquidator -> liquidateBorrow",
+      "oracle -> getUnderlyingPrice (price feed)"
+    ],
+    "assumptions": [
+      "Solidity 0.5.x — no built-in overflow/underflow protection; SafeMath or manual checks required",
+      "Oracle prices may be stale or manipulated; staleness window is not enforced on-chain",
+      "Comptroller is the access-control gateway for market operations",
+      "Exchange rate increases monotonically under normal conditions (no negative interest)",
+      "Block number is used as the time unit for interest accrual",
+      "ERC-20 underlying tokens may have non-standard return values (no-revert-on-failure)"
+    ]
+  }
+}

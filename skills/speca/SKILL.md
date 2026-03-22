@@ -1,11 +1,36 @@
 ---
 name: speca
-description: SPECA (SPEcification-to-Checklist Auditing) pipeline for Solidity smart contract security auditing. Single entry point for all phases.
+description: SPECA (SPEcification-to-Checklist Auditing) pipeline for Solidity smart contract security auditing. Use when the user requests a security audit of Solidity contracts against a specification document.
+metadata:
+  author: stanah
+  version: "1.0.0"
 ---
 
 # /speca - SPECA Security Audit Pipeline
 
 You are executing the SPECA pipeline for Solidity smart contract security auditing. This skill routes to the appropriate phase based on the provided argument.
+
+## Setup
+
+Before executing any phase, determine this skill's installation directory and set `SPECA_DIR`:
+
+```
+SPECA_DIR=<directory containing this SKILL.md>
+```
+
+All commands and file references in this skill use `$SPECA_DIR` as prefix. Replace with the resolved path.
+
+### Agent-Specific Notes
+
+| Environment | Typical `SPECA_DIR` path |
+|---|---|
+| Claude Code (project) | `.claude/skills/speca` |
+| Claude Code (global) | `~/.claude/skills/speca` |
+| claude.ai sandbox | `/mnt/skills/user/speca` |
+| Cursor | `.cursor/skills/speca` |
+| `npx skills add` | `skills/speca` |
+
+The path may vary depending on where the user installed the skill.
 
 ## Usage
 
@@ -36,13 +61,13 @@ Parse `$ARGUMENTS` to determine the phase. The first word after `/speca` is the 
 1. Extract the phase name from `$ARGUMENTS`: `$ARGUMENTS` contains everything after `/speca`. Trim whitespace and take the first word.
 
 2. Read the phase instruction file:
-   - `init` → Read `.claude/skills/speca/phases/init.md`
-   - `extract` → Read `.claude/skills/speca/phases/extract.md`
-   - `map` → Read `.claude/skills/speca/phases/map.md`
-   - `checklist` → Read `.claude/skills/speca/phases/checklist.md`
-   - `audit` → Read `.claude/skills/speca/phases/audit.md`
-   - `test` → Read `.claude/skills/speca/phases/test.md`
-   - `report` → Read `.claude/skills/speca/phases/report.md`
+   - `init` → Read `$SPECA_DIR/phases/init.md`
+   - `extract` → Read `$SPECA_DIR/phases/extract.md`
+   - `map` → Read `$SPECA_DIR/phases/map.md`
+   - `checklist` → Read `$SPECA_DIR/phases/checklist.md`
+   - `audit` → Read `$SPECA_DIR/phases/audit.md`
+   - `test` → Read `$SPECA_DIR/phases/test.md`
+   - `report` → Read `$SPECA_DIR/phases/report.md`
 
 3. Follow the phase instructions completely.
 
@@ -53,7 +78,7 @@ Parse `$ARGUMENTS` to determine the phase. The first word after `/speca` is the 
 All data access and operations go through the unified CLI:
 
 ```
-node .claude/skills/speca/scripts/speca-cli.mjs <subcommand> [options]
+node $SPECA_DIR/scripts/speca-cli.mjs <subcommand> [options]
 ```
 
 | Subcommand | Purpose |
@@ -69,8 +94,9 @@ node .claude/skills/speca/scripts/speca-cli.mjs <subcommand> [options]
 
 ## Reference Data
 
-- `.claude/skills/speca/reference/vulnerability-patterns.md` — Solidity vulnerability pattern database for checklist generation
-- `.claude/skills/speca/reference/context-rules.md` — Context management rules (loaded by all phases)
+- `$SPECA_DIR/reference/vulnerability-patterns.md` — Solidity vulnerability pattern database for checklist generation
+- `$SPECA_DIR/reference/context-rules.md` — Context management rules (loaded by all phases)
+- `$SPECA_DIR/reference/scaling-guide.md` — Human review protocol, session splitting, and subagent delegation
 
 ## No Arguments — Help
 

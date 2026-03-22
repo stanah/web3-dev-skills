@@ -10,26 +10,26 @@ This document is the complete instruction set for running a SPECA pipeline verif
 ## Step 1: Setup Test Workspace
 
 ```bash
-node .claude/skills/speca/tests/setup-test.mjs --case liquid-ron --output /tmp/speca-verify --clean
+node $SPECA_DIR/tests/setup-test.mjs --case liquid-ron --output /tmp/speca-verify --clean
 ```
 
 This creates `/tmp/speca-verify` with contracts, docs, and `.speca/config.json`.
 
 ## Step 2: Read Context Rules
 
-Read `.claude/skills/speca/reference/context-rules.md` and follow strictly throughout all phases.
+Read `$SPECA_DIR/reference/context-rules.md` and follow strictly throughout all phases.
 
 Key rules:
 - NEVER Read `.speca/*.json` files directly — use `speca-cli.mjs`
 - Solidity files: Read with `offset`/`limit` only, never full files
 - Phase/reference files: direct Read is allowed
 
-CLI path: `node .claude/skills/speca/scripts/speca-cli.mjs <subcommand> --project-root /tmp/speca-verify`
+CLI path: `node $SPECA_DIR/scripts/speca-cli.mjs <subcommand> --project-root /tmp/speca-verify`
 
 ## Step 3: Execute Pipeline Phases
 
 Execute each phase in order. For each phase:
-1. Read the phase instruction file at `.claude/skills/speca/phases/<phase>.md`
+1. Read the phase instruction file at `$SPECA_DIR/phases/<phase>.md`
 2. Follow the instructions completely
 3. Write the output file to `/tmp/speca-verify/.speca/`
 
@@ -43,7 +43,7 @@ Execute each phase in order. For each phase:
 ## Step 4: Verify Output
 
 ```bash
-node .claude/skills/speca/tests/verify-output.mjs --project-root /tmp/speca-verify
+node $SPECA_DIR/tests/verify-output.mjs --project-root /tmp/speca-verify
 ```
 
 This runs automated checks on all output files. Exit code 0 = all checks pass.

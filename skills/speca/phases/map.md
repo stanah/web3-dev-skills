@@ -1,25 +1,28 @@
 # SPECA Map Phase
 
 ## Context Management
-Read `.claude/skills/speca/reference/context-rules.md` and follow strictly.
+Read `$SPECA_DIR/reference/context-rules.md` and follow strictly.
+
+### Scaling and Human Review
+Read `$SPECA_DIR/reference/scaling-guide.md` for human review protocol. After this phase completes, present mapping coverage to the user and wait for confirmation before proceeding to the checklist phase. For large codebases (> 30 contracts or > 3000 LOC), consider subagent delegation for batch processing.
 
 You are mapping extracted requirements to their corresponding Solidity source code locations and producing `.speca/mapping.json`. This is Phase 1b of the SPECA pipeline. Mapping quality directly affects audit accuracy — wrong mappings cause the auditor to examine the wrong code, and unmapped requirements may indicate missing implementations.
 
 ## Prerequisites Check
 
-1. Run `node .claude/skills/speca/scripts/speca-cli.mjs config --action summary`. If missing, stop: "No SPECA config found. Run `/speca init` first."
+1. Run `node $SPECA_DIR/scripts/speca-cli.mjs config --action summary`. If missing, stop: "No SPECA config found. Run `/speca init` first."
 2. Extract `source_paths` and `language` (default: `"en"`).
-3. Run `node .claude/skills/speca/scripts/speca-cli.mjs query --file requirements --mode summary`. If missing, stop: "No requirements found. Run `/speca extract` first."
+3. Run `node $SPECA_DIR/scripts/speca-cli.mjs query --file requirements --mode summary`. If missing, stop: "No requirements found. Run `/speca extract` first."
 4. If requirements array is empty, stop: "No requirements. Run `/speca extract` to populate."
 
 ### Checkpoint Support
 
 Check for existing progress:
 ```bash
-node .claude/skills/speca/scripts/speca-cli.mjs config --action hash
+node $SPECA_DIR/scripts/speca-cli.mjs config --action hash
 ```
 ```bash
-node .claude/skills/speca/scripts/speca-cli.mjs progress --phase map --action should-resume
+node $SPECA_DIR/scripts/speca-cli.mjs progress --phase map --action should-resume
 ```
 
 If `action` is `"resume"`, continue from the last completed batch.
@@ -29,9 +32,9 @@ If `action` is `"resume"`, continue from the last completed batch.
 Process requirements in batches of 10:
 ```bash
 # Get total count first
-node .claude/skills/speca/scripts/speca-cli.mjs query --file requirements --mode summary
+node $SPECA_DIR/scripts/speca-cli.mjs query --file requirements --mode summary
 # Process in batches of 10
-node .claude/skills/speca/scripts/speca-cli.mjs query --file requirements --mode batch --index 0 --size 10
+node $SPECA_DIR/scripts/speca-cli.mjs query --file requirements --mode batch --index 0 --size 10
 ```
 
 For each batch, perform Phases 1-3 below. Save progress after each batch.
@@ -116,7 +119,7 @@ Discard candidates with confidence below 0.5. Sort by confidence descending.
 ### Save Batch Progress
 After each batch:
 ```bash
-echo '{"phase":"map","status":"in_progress","completed_batches":<N>,"total_batches":<total>,"config_hash":"<hash>","updated_at":"<ISO>"}' | node .claude/skills/speca/scripts/speca-cli.mjs progress --phase map --action save
+echo '{"phase":"map","status":"in_progress","completed_batches":<N>,"total_batches":<total>,"config_hash":"<hash>","updated_at":"<ISO>"}' | node $SPECA_DIR/scripts/speca-cli.mjs progress --phase map --action save
 ```
 
 ---
@@ -191,7 +194,7 @@ If unmapped, print warnings section.
 
 Mark progress completed:
 ```bash
-echo '{"phase":"map","status":"completed","config_hash":"<hash>","updated_at":"<ISO>"}' | node .claude/skills/speca/scripts/speca-cli.mjs progress --phase map --action save
+echo '{"phase":"map","status":"completed","config_hash":"<hash>","updated_at":"<ISO>"}' | node $SPECA_DIR/scripts/speca-cli.mjs progress --phase map --action save
 ```
 
 ---
