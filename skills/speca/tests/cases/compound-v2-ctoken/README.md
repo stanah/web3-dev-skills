@@ -8,7 +8,7 @@ Large-scale SPECA test case using Compound Protocol V2's cToken contracts.
 |----------|-------|
 | Protocol | Compound V2 |
 | Focus | cToken (supply, borrow, liquidation, interest) |
-| Contracts | ~12 files |
+| Contracts | 16 files |
 | LOC | ~3500 |
 | Solidity | 0.5.x (no built-in overflow protection) |
 | License | BSD-3-Clause |

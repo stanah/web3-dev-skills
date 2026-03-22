@@ -42,9 +42,9 @@ cd /tmp/speca-verify-large
 
 **Human review gate:**
 ```bash
-node skills/speca/scripts/speca-cli.mjs query --file requirements --mode summary
+node $SPECA_DIR/scripts/speca-cli.mjs query --file requirements --mode summary
 # Expected: 40+ requirements
-node skills/speca/scripts/speca-cli.mjs query --file requirements --mode batch --index 0 --size 10
+node $SPECA_DIR/scripts/speca-cli.mjs query --file requirements --mode batch --index 0 --size 10
 # Spot-check first 10 requirements
 ```
 - Are RFC 2119 modal verbs (MUST/SHOULD/MAY) correctly identified?
@@ -62,7 +62,7 @@ cd /tmp/speca-verify-large
 
 **Human review gate:**
 ```bash
-node skills/speca/scripts/speca-cli.mjs query --file mapping --mode summary
+node $SPECA_DIR/scripts/speca-cli.mjs query --file mapping --mode summary
 ```
 - What is the mapping coverage rate? (target: > 80%)
 - For unmapped requirements: are they truly unimplemented, or did the mapper miss?
@@ -79,7 +79,7 @@ cd /tmp/speca-verify-large
 
 **Human review gate:**
 ```bash
-node skills/speca/scripts/speca-cli.mjs query --file checklist --mode summary
+node $SPECA_DIR/scripts/speca-cli.mjs query --file checklist --mode summary
 # Expected: 80+ checklist items (varied severities)
 ```
 - Are checklist items concrete and testable?
@@ -97,7 +97,7 @@ cd /tmp/speca-verify-large
 
 **Human review gate:**
 ```bash
-node skills/speca/scripts/speca-cli.mjs query --file findings --mode summary
+node $SPECA_DIR/scripts/speca-cli.mjs query --file findings --mode summary
 ```
 - Review each finding (~10 min per finding):
   - Is the code evidence concrete and accurate?
@@ -136,7 +136,7 @@ cd /tmp/speca-verify-large
 ## Final Verification
 
 ```bash
-node skills/speca/tests/verify-output.mjs --dir /tmp/speca-verify-large
+node $SPECA_DIR/tests/verify-output.mjs --project-root /tmp/speca-verify-large
 ```
 
 ## Comparison with Known Audits

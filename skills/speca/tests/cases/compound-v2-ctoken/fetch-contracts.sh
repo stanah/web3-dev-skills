@@ -45,9 +45,8 @@ done
 
 if [ "$FAILED" -gt 0 ]; then
   echo ""
-  echo "WARNING: ${FAILED} file(s) failed to download."
-  echo "Some files may be in subdirectories. Trying alternate paths..."
-
+  echo "ERROR: ${FAILED} file(s) failed to download."
+  exit 1
 fi
 
 COUNT=$(find "$OUT_DIR" -name '*.sol' -size +0 | wc -l | tr -d ' ')
