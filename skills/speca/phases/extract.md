@@ -3,6 +3,9 @@
 ## Context Management
 Read `$SPECA_DIR/reference/context-rules.md` and follow strictly.
 
+### Scaling and Human Review
+Read `$SPECA_DIR/reference/scaling-guide.md` for human review protocol. After this phase completes, present a summary of extracted requirements to the user and wait for confirmation before proceeding to the map phase.
+
 You are extracting normative requirements from specification documents and producing `.speca/requirements.json`. This is Phase 1a of the SPECA pipeline. Accuracy is critical — missed requirements create gaps in the audit checklist.
 
 ## Prerequisites Check

@@ -3,6 +3,9 @@
 ## Context Management
 Read `$SPECA_DIR/reference/context-rules.md` and follow strictly.
 
+### Scaling and Human Review
+Read `$SPECA_DIR/reference/scaling-guide.md` for human review protocol. After this phase completes, present generated tests to the user for PoC quality review (~30 min per finding for refinement). For large codebases (> 30 contracts or > 3000 LOC), consider subagent delegation for batch processing.
+
 You are generating executable Foundry test contracts for boundary condition verification and PoC reproduction of audit findings. This implements Strategy C from the SPECA paper, turning static findings into executable evidence.
 
 ## Prerequisites Check

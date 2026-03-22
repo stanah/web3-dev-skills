@@ -3,6 +3,9 @@
 ## Context Management
 Read `$SPECA_DIR/reference/context-rules.md` and follow strictly.
 
+### Scaling and Human Review
+Read `$SPECA_DIR/reference/scaling-guide.md` for human review protocol. After this phase completes, present mapping coverage to the user and wait for confirmation before proceeding to the checklist phase. For large codebases (> 30 contracts or > 3000 LOC), consider subagent delegation for batch processing.
+
 You are mapping extracted requirements to their corresponding Solidity source code locations and producing `.speca/mapping.json`. This is Phase 1b of the SPECA pipeline. Mapping quality directly affects audit accuracy — wrong mappings cause the auditor to examine the wrong code, and unmapped requirements may indicate missing implementations.
 
 ## Prerequisites Check

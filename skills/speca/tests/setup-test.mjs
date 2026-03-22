@@ -45,6 +45,24 @@ if (existsSync(outputDir)) {
   rmSync(outputDir, { recursive: true, force: true });
 }
 
+// If contracts/ doesn't exist but fetch-contracts.sh does, run it first
+const contractsDir = join(caseDir, 'contracts');
+const fetchScript = join(caseDir, 'fetch-contracts.sh');
+if (!existsSync(contractsDir) && existsSync(fetchScript)) {
+  const { execFileSync } = await import('node:child_process');
+  console.log(JSON.stringify({ status: 'fetching', script: fetchScript }));
+  try {
+    execFileSync('bash', [fetchScript], { stdio: 'inherit' });
+  } catch (e) {
+    console.error(JSON.stringify({ error: `fetch-contracts.sh failed: ${e.message}` }));
+    process.exit(1);
+  }
+  if (!existsSync(contractsDir)) {
+    console.error(JSON.stringify({ error: 'fetch-contracts.sh completed but contracts/ directory not found' }));
+    process.exit(1);
+  }
+}
+
 // Copy contracts and docs
 cpSync(join(caseDir, 'contracts'), join(outputDir, 'contracts'), { recursive: true });
 cpSync(join(caseDir, 'docs'), join(outputDir, 'docs'), { recursive: true });

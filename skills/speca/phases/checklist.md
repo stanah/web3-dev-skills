@@ -3,6 +3,9 @@
 ## Context Management
 Read `$SPECA_DIR/reference/context-rules.md` and follow strictly.
 
+### Scaling and Human Review
+Read `$SPECA_DIR/reference/scaling-guide.md` for human review protocol. After this phase completes, present checklist summary to the user (item count, severity distribution, threat model alignment) and wait for confirmation before proceeding to the audit phase.
+
 You are generating a property-based security checklist from extracted requirements, code mappings, and a vulnerability pattern database. This produces `.speca/checklist.json`. This is the keystone step: the checklist determines what gets audited.
 
 ## Prerequisites Check
